@@ -13,6 +13,7 @@ import { prebake } from '@src/repl/prebake.mjs';
 import { isTauri } from '../../../tauri.mjs';
 import ClipboardDocumentIcon from '@heroicons/react/20/solid/ClipboardDocumentIcon';
 import DocumentPlusIcon from '@heroicons/react/20/solid/DocumentPlusIcon';
+import { TreeView, groupSoundsByPack } from './TreeView.jsx';
 
 const getSamples = (samples) =>
   Array.isArray(samples) ? samples.length : typeof samples === 'object' ? Object.values(samples).length : 1;
@@ -55,10 +56,27 @@ function insertIntoEditor(text) {
 export function SoundsTab() {
   const sounds = useStore(soundMap);
 
-  const { soundsFilter } = useSettings();
+  const { soundsFilter, enabledPacks } = useSettings();
   const [search, setSearch] = useState('');
+  const [showPackFilter, setShowPackFilter] = useState(false);
+  const [expandedPacks, setExpandedPacks] = useState(new Set());
   const { BASE_URL } = import.meta.env;
   const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+
+  // Извлекаем все доступные паки и подсчитываем звуки в каждом
+  const availablePacks = useMemo(() => {
+    if (!sounds) {
+      return {};
+    }
+    const packs = {};
+    Object.entries(sounds)
+      .filter(([key]) => !key.startsWith('_'))
+      .forEach(([_, { data }]) => {
+        const pack = data.pack || 'other';
+        packs[pack] = (packs[pack] || 0) + 1;
+      });
+    return packs;
+  }, [sounds]);
 
   const soundEntries = useMemo(() => {
     if (!sounds) {
@@ -69,6 +87,14 @@ export function SoundsTab() {
       .filter(([key]) => !key.startsWith('_'))
       .sort((a, b) => a[0].localeCompare(b[0]))
       .filter(([name]) => name.toLowerCase().includes(search.toLowerCase()));
+
+    // Применяем фильтр по пакам
+    if (enabledPacks !== 'all' && Array.isArray(enabledPacks)) {
+      filtered = filtered.filter(([_, { data }]) => {
+        const pack = data.pack || 'other';
+        return enabledPacks.includes(pack);
+      });
+    }
 
     if (soundsFilter === soundFilterType.USER) {
       return filtered.filter(([_, { data }]) => !data.prebake);
@@ -90,7 +116,78 @@ export function SoundsTab() {
       return [];
     }
     return filtered;
-  }, [sounds, soundsFilter, search]);
+  }, [sounds, soundsFilter, search, enabledPacks]);
+
+  // Группировка звуков по пакам
+  const packedSounds = useMemo(() => {
+    return groupSoundsByPack(soundEntries);
+  }, [soundEntries]);
+
+  // Функция для переключения раскрытых паков
+  const handleTogglePack = (packName) => {
+    setExpandedPacks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(packName)) {
+        newSet.delete(packName);
+      } else {
+        newSet.add(packName);
+      }
+      return newSet;
+    });
+  };
+
+  // Автоматически раскрывать паки при поиске
+  useMemo(() => {
+    if (search) {
+      // Раскрыть все паки, которые имеют совпадения
+      const packsToExpand = new Set(Object.keys(packedSounds));
+      setExpandedPacks(packsToExpand);
+    }
+  }, [search, packedSounds]);
+
+  // Функции для управления фильтром паков
+  const togglePack = useEvent((packName) => {
+    if (enabledPacks === 'all') {
+      // Если все паки включены, выключаем только этот
+      const allPacks = Object.keys(availablePacks);
+      const newPacks = allPacks.filter((p) => p !== packName);
+      settingsMap.setKey('enabledPacks', JSON.stringify(newPacks));
+    } else {
+      const currentPacks = Array.isArray(enabledPacks) ? enabledPacks : [];
+      if (currentPacks.includes(packName)) {
+        // Убираем пак из списка
+        const newPacks = currentPacks.filter((p) => p !== packName);
+        if (newPacks.length === 0) {
+          settingsMap.setKey('enabledPacks', 'all');
+        } else {
+          settingsMap.setKey('enabledPacks', JSON.stringify(newPacks));
+        }
+      } else {
+        // Добавляем пак в список
+        const newPacks = [...currentPacks, packName];
+        const allPacks = Object.keys(availablePacks);
+        if (newPacks.length === allPacks.length) {
+          settingsMap.setKey('enabledPacks', 'all');
+        } else {
+          settingsMap.setKey('enabledPacks', JSON.stringify(newPacks));
+        }
+      }
+    }
+  });
+
+  const selectAllPacks = useEvent(() => {
+    settingsMap.setKey('enabledPacks', 'all');
+  });
+
+  const deselectAllPacks = useEvent(() => {
+    settingsMap.setKey('enabledPacks', JSON.stringify([]));
+  });
+
+  const isPackEnabled = useEvent((packName) => {
+    if (enabledPacks === 'all') return true;
+    if (!Array.isArray(enabledPacks)) return false;
+    return enabledPacks.includes(packName);
+  });
 
   // holds mutable ref to current triggered sound
   const trigRef = useRef();
@@ -128,6 +225,51 @@ export function SoundsTab() {
           }}
         ></ButtonGroup>
       </div>
+
+      {/* Фильтр по пакам */}
+      {Object.keys(availablePacks).length > 0 && soundsFilter !== 'importSounds' && (
+        <div className="flex flex-col gap-2 text-sm">
+          <button
+            onClick={() => setShowPackFilter(!showPackFilter)}
+            className="text-left text-xs opacity-70 hover:opacity-100 transition-opacity"
+          >
+            {showPackFilter ? '▼' : '▶'} Фильтр по пакам
+          </button>
+          {showPackFilter && (
+            <div className="flex flex-col gap-1 pl-4 max-h-40 overflow-y-auto">
+              <div className="flex gap-2 mb-1">
+                <button
+                  onClick={selectAllPacks}
+                  className="text-xs opacity-70 hover:opacity-100 underline"
+                >
+                  Выбрать все
+                </button>
+                <button
+                  onClick={deselectAllPacks}
+                  className="text-xs opacity-70 hover:opacity-100 underline"
+                >
+                  Снять все
+                </button>
+              </div>
+              {Object.entries(availablePacks)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([packName, count]) => (
+                  <label key={packName} className="flex items-center gap-2 cursor-pointer hover:opacity-70">
+                    <input
+                      type="checkbox"
+                      checked={isPackEnabled(packName)}
+                      onChange={() => togglePack(packName)}
+                      className="cursor-pointer"
+                    />
+                    <span className="text-xs">
+                      {packName} ({count})
+                    </span>
+                  </label>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {soundsFilter === soundFilterType.USER && soundEntries.length > 0 && (
         <ActionButton

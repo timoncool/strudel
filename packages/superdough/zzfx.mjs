@@ -93,7 +93,7 @@ export function registerZZFXSounds() {
           stop: () => {},
         };
       },
-      { type: 'synth', prebake: true },
+      { type: 'synth', prebake: true, pack: 'Synths' },
     );
   });
 }

@@ -74,7 +74,7 @@ export function registerSynthSounds() {
           },
         };
       },
-      { type: 'synth', prebake: true },
+      { type: 'synth', prebake: true, pack: 'Synths' },
     );
   });
 
@@ -143,7 +143,7 @@ export function registerSynthSounds() {
         },
       };
     },
-    { type: 'synth', prebake: true },
+    { type: 'synth', prebake: true, pack: 'Synths' },
   );
 
   registerSound(
@@ -404,7 +404,7 @@ export function registerSynthSounds() {
           },
         };
       },
-      { type: 'synth', prebake: true },
+      { type: 'synth', prebake: true, pack: 'Synths' },
     );
   });
   waveformAliases.forEach(([alias, actual]) => soundMap.set({ ...soundMap.get(), [alias]: soundMap.get()[actual] }));

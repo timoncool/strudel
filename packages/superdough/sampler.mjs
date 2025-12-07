@@ -256,12 +256,12 @@ export const samples = async (sampleMap, baseUrl = sampleMap._base || '', option
     const [json, base] = await fetchSampleMap(sampleMap);
     return samples(json, baseUrl || base, options);
   }
-  const { prebake, tag } = options;
+  const { prebake, tag, pack } = options;
 
   processSampleMap(
     sampleMap,
     (key, bank) => {
-      registerSampleSource(key, bank, { baseUrl, prebake, tag });
+      registerSampleSource(key, bank, { baseUrl, prebake, tag, pack });
     },
     baseUrl,
   );

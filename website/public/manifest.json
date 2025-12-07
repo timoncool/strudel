@@ -1,11 +1,11 @@
 {
   "short_name": "Bulka REPL",
-  "name": "Bulka REPL — Лайв-кодинг музыки (based on Strudel)",
+  "name": "Bulka REPL — Лайв-кодинг музыки",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ],
   "start_url": ".",

@@ -1,6 +1,6 @@
 export const SITE = {
   title: 'Bulka',
-  description: 'Bulka — русскоязычный форк Strudel, платформы для лайв-кодинга музыки в браузере (based on Strudel by Alex McLean).',
+  description: 'Bulka — платформа для лайв-кодинга музыки в браузере.',
   defaultLanguage: 'en',
 };
 

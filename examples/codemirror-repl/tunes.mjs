@@ -1,6 +1,6 @@
 // Default tune - Pixel Sunrise
 export const simpleTune = `// @title Pixel Sunrise
-// @by Strudel композитор
+// @by Nerual Dreming
 
 cpm(180/2);
 

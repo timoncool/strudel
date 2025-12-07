@@ -179,7 +179,7 @@ export function registerSoundfonts() {
         });
         return { node, stop };
       },
-      { type: 'soundfont', prebake: true, fonts },
+      { type: 'soundfont', prebake: true, fonts, pack: 'Soundfonts' },
     );
   });
 }

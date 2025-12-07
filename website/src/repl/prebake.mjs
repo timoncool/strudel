@@ -22,23 +22,26 @@ export async function prebake() {
     // => getting "window is not defined", as soon as "@strudel/soundfonts" is imported statically
     // seems to be a problem with soundfont2
     import('@strudel/soundfonts').then(({ registerSoundfonts }) => registerSoundfonts()),
-    samples(`${baseCDN}/piano.json`, `${baseCDN}/piano/`, { prebake: true }),
+    samples(`${baseCDN}/piano.json`, `${baseCDN}/piano/`, { prebake: true, pack: 'piano' }),
     // https://github.com/sgossner/VCSL/
     // https://api.github.com/repositories/126427031/contents/
     // LICENSE: CC0 general-purpose
-    samples(`${baseCDN}/vcsl.json`, `${baseCDN}/VCSL/`, { prebake: true }),
+    samples(`${baseCDN}/vcsl.json`, `${baseCDN}/VCSL/`, { prebake: true, pack: 'vcsl' }),
     samples(`${baseCDN}/tidal-drum-machines.json`, `${baseCDN}/tidal-drum-machines/machines/`, {
       prebake: true,
       tag: 'drum-machines',
+      pack: 'tidal-drum-machines',
     }),
     samples(`${baseCDN}/uzu-drumkit.json`, `${baseCDN}/uzu-drumkit/`, {
       prebake: true,
       tag: 'drum-machines',
+      pack: 'uzu-drumkit',
     }),
     samples(`${baseCDN}/uzu-wavetables.json`, `${baseCDN}/uzu-wavetables/`, {
       prebake: true,
+      pack: 'uzu-wavetables',
     }),
-    samples(`${baseCDN}/mridangam.json`, `${baseCDN}/mrid/`, { prebake: true, tag: 'drum-machines' }),
+    samples(`${baseCDN}/mridangam.json`, `${baseCDN}/mrid/`, { prebake: true, tag: 'drum-machines', pack: 'mridangam' }),
     samples(
       {
         casio: ['casio/high.wav', 'casio/low.wav', 'casio/noise.wav'],
@@ -151,6 +154,7 @@ export async function prebake() {
       `${baseCDN}/Dirt-Samples/`,
       {
         prebake: true,
+        pack: 'Dirt-Samples',
       },
     ),
   ]);

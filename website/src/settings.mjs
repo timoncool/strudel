@@ -52,6 +52,7 @@ export const defaultSettings = {
   maxPolyphony: 128,
   multiChannelOrbits: false,
   includePrebakeScriptInShare: true,
+  enabledPacks: 'all', // 'all' или JSON строка с массивом названий паков
 };
 
 let search = null;
@@ -75,6 +76,17 @@ export function useSettings() {
     data.id = data.id ?? key;
     userPatterns[key] = data;
   });
+
+  // Парсим enabledPacks
+  let enabledPacks = state.enabledPacks;
+  if (enabledPacks !== 'all' && typeof enabledPacks === 'string') {
+    try {
+      enabledPacks = JSON.parse(enabledPacks);
+    } catch (e) {
+      enabledPacks = 'all';
+    }
+  }
+
   return {
     ...state,
     isZen: parseBoolean(state.isZen),
@@ -99,6 +111,7 @@ export function useSettings() {
     userPatterns: userPatterns,
     multiChannelOrbits: parseBoolean(state.multiChannelOrbits),
     includePrebakeScriptInShare: parseBoolean(state.includePrebakeScriptInShare),
+    enabledPacks: enabledPacks,
     patternAutoStart: isUdels()
       ? false
       : state.patternAutoStart === undefined

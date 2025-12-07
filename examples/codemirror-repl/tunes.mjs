@@ -1,6 +1,5 @@
-// Pixel Sunrise - by Nerual Dreaming
-// Uses only built-in synths and local RolandTR808 samples
-export const pixelSunrise = `// @title Pixel Sunrise
+// Default tune - Pixel Sunrise by Nerual Dreaming
+export const simpleTune = `// @title Pixel Sunrise
 // @by Nerual Dreaming
 
 // Load local drum samples
@@ -105,14 +104,6 @@ stack(
   )
 ).gain(0.15);
 `;
-
-// Simple tune using only built-in soundfonts (no external samples needed)
-export const simpleTune = `// Simple demo using soundfonts only
-note("c3 eb3 g3 bb3").s("gm_epiano1").slow(2)
-.stack(
-  note("c2 g2").s("gm_acoustic_bass").slow(2),
-  note("c4 eb4 g4").s("gm_pad_choir").slow(4).gain(.5)
-)`;
 
 export const bumpStreet = `// froos - "22 bump street", licensed with CC BY-NC-SA 4.0
 // NOTE: This tune requires external samples from strudel.cc

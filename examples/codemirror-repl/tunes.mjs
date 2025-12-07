@@ -2,8 +2,6 @@
 export const simpleTune = `// @title Pixel Sunrise
 // @by Strudel композитор
 
-samples('./tidal-drum-machines.json', './samples/tidal-drum-machines/machines/')
-
 cpm(180/2);
 
 stack(

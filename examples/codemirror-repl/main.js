@@ -5,8 +5,16 @@ import { drawPianoroll } from '@strudel/draw';
 import './style.css';
 import { initAudioOnFirstClick } from '@strudel/webaudio';
 import { transpiler } from '@strudel/transpiler';
-import { getAudioContext, webaudioOutput, registerSynthSounds } from '@strudel/webaudio';
+import { getAudioContext, webaudioOutput, registerSynthSounds, samples } from '@strudel/webaudio';
 import { registerSoundfonts } from '@strudel/soundfonts';
+
+// Load all local sample packs
+const loadLocalSamples = () => Promise.all([
+  samples('./tidal-drum-machines.json', './samples/tidal-drum-machines/machines/'),
+  samples('./samples/Dirt-Samples/strudel.json'),
+  samples('./samples/felixroos/strudel.json'),
+  samples('./samples/clean-breaks/strudel.json'),
+]);
 
 // init canvas
 const canvas = document.getElementById('roll');
@@ -32,7 +40,7 @@ const editor = new StrudelMirror({
       import('@strudel/tonal'),
       import('@strudel/webaudio'),
     );
-    await Promise.all([loadModules, registerSynthSounds(), registerSoundfonts()]);
+    await Promise.all([loadModules, registerSynthSounds(), registerSoundfonts(), loadLocalSamples()]);
   },
 });
 

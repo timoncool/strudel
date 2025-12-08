@@ -13,15 +13,14 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/openai": "^1.0.0",
-    "@astrojs/node": "^9.0.0",
-    "ai": "^4.0.0",
-    "zod": "^3.24.1",
     "@algolia/client-search": "^5.20.0",
     "@astro-community/astro-embed-youtube": "^0.5.6",
     "@astrojs/mdx": "^4.0.7",
+    "@astrojs/node": "^9.0.0",
     "@astrojs/react": "^4.1.6",
     "@astrojs/rss": "^4.0.11",
     "@astrojs/tailwind": "^5.1.5",
+    "@astrojs/vercel": "^9.0.2",
     "@docsearch/css": "^3.8.3",
     "@docsearch/react": "^3.8.3",
     "@headlessui/react": "^2.2.0",
@@ -37,6 +36,7 @@
     "@strudel/hydra": "workspace:*",
     "@strudel/midi": "workspace:*",
     "@strudel/mini": "workspace:*",
+    "@strudel/mondo": "workspace:*",
     "@strudel/motion": "workspace:*",
     "@strudel/mqtt": "workspace:*",
     "@strudel/osc": "workspace:*",
@@ -46,7 +46,6 @@
     "@strudel/tonal": "workspace:*",
     "@strudel/transpiler": "workspace:*",
     "@strudel/webaudio": "workspace:*",
-    "@strudel/mondo": "workspace:*",
     "@strudel/xen": "workspace:*",
     "@supabase/supabase-js": "^2.48.1",
     "@tailwindcss/forms": "^0.5.10",
@@ -57,6 +56,7 @@
     "@types/node": "^22.10.10",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "ai": "^4.0.0",
     "astro": "^5.1.9",
     "claviature": "^0.1.0",
     "date-fns": "^4.1.0",
@@ -72,14 +72,15 @@
     "rehype-urls": "^1.2.0",
     "remark-toc": "^9.0.0",
     "tailwindcss": "^3.4.17",
-    "worker-timers": "^8.0.13"
+    "worker-timers": "^8.0.13",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@vite-pwa/astro": "^0.5.0",
     "html-escaper": "^3.0.3",
     "sharp": "^0.33.5",
-    "workbox-window": "^7.3.0",
-    "vite-plugin-bundle-audioworklet": "workspace:*"
+    "vite-plugin-bundle-audioworklet": "workspace:*",
+    "workbox-window": "^7.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

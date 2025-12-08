@@ -709,56 +709,185 @@ async function runOpenAIAgent(
         }
 
         // No tool calls - stream the final text response
-        const streamResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
+        // Check if model supports Responses API with reasoning (GPT-5.1, GPT-5)
+        const supportsResponses = model.includes('gpt-5') || model.includes('o1') || model.includes('o3') || model.includes('o4');
+
+        if (supportsResponses) {
+          // Use Responses API for GPT-5.1 with reasoning
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '🧠 Думаю...' })}\n\n`));
+
+          const responsesBody: any = {
             model,
-            messages: conversationMessages,
+            input: conversationMessages.map(m => ({
+              role: m.role === 'system' ? 'developer' : m.role,
+              content: m.content,
+            })),
             stream: true,
-            temperature: 0.7,
-          }),
-        });
+            reasoning: {
+              effort: 'medium',
+              summary: 'auto',
+            },
+          };
 
-        if (!streamResponse.ok || !streamResponse.body) {
-          // Fallback to non-streamed content
-          if (checkMessage.content) {
-            const textData = { type: 'text', content: checkMessage.content };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
-          }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-          return;
-        }
+          const streamResponse = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(responsesBody),
+          });
 
-        // Stream the response
-        const reader = streamResponse.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+          if (!streamResponse.ok || !streamResponse.body) {
+            // Fallback to Chat Completions
+            const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: conversationMessages,
+                stream: true,
+              }),
+            });
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+            if (fallbackResponse.ok && fallbackResponse.body) {
+              const reader = fallbackResponse.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
-                  const textData = { type: 'text', content: delta };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+                    try {
+                      const parsed = JSON.parse(data);
+                      const delta = parsed.choices?.[0]?.delta?.content;
+                      if (delta) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta })}\n\n`));
+                      }
+                    } catch (e) { }
+                  }
                 }
-              } catch (e) { }
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+            return;
+          }
+
+          // Stream Responses API (handles reasoning summaries)
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let isThinking = false;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+
+                  // Handle reasoning summary events
+                  if (parsed.type === 'response.reasoning_summary_text.added') {
+                    isThinking = true;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
+                  }
+                  else if (parsed.type === 'response.reasoning_summary_text.delta') {
+                    const delta = parsed.delta;
+                    if (delta) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: delta })}\n\n`));
+                    }
+                  }
+                  else if (parsed.type === 'response.reasoning_summary_text.done') {
+                    isThinking = false;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
+                  }
+                  // Handle text output
+                  else if (parsed.type === 'response.output_text.delta') {
+                    const delta = parsed.delta;
+                    if (delta) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta })}\n\n`));
+                    }
+                  }
+                  // Legacy format
+                  else if (parsed.choices?.[0]?.delta?.content) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: parsed.choices[0].delta.content })}\n\n`));
+                  }
+                } catch (e) { }
+              }
+            }
+          }
+        } else {
+          // Use Chat Completions API for older models
+          const streamResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages: conversationMessages,
+              stream: true,
+              temperature: 0.7,
+            }),
+          });
+
+          if (!streamResponse.ok || !streamResponse.body) {
+            // Fallback to non-streamed content
+            if (checkMessage.content) {
+              const textData = { type: 'text', content: checkMessage.content };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+            return;
+          }
+
+          // Stream the response
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) {
+                    const textData = { type: 'text', content: delta };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                } catch (e) { }
+              }
             }
           }
         }
@@ -901,7 +1030,26 @@ async function runAnthropicAgent(
           continue;
         }
 
-        // No tool use - stream the final text response
+        // No tool use - stream the final text response with extended thinking
+        // Check if model supports thinking (claude-sonnet-4, claude-opus-4, etc.)
+        const supportsThinking = model.includes('sonnet-4') || model.includes('opus-4') || model.includes('claude-4');
+
+        const streamBody: any = {
+          model,
+          max_tokens: 16000,
+          system: systemPrompt,
+          messages: conversationMessages,
+          stream: true,
+        };
+
+        // Enable extended thinking for supported models
+        if (supportsThinking) {
+          streamBody.thinking = {
+            type: 'enabled',
+            budget_tokens: 8000,
+          };
+        }
+
         const streamResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -909,13 +1057,7 @@ async function runAnthropicAgent(
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
           },
-          body: JSON.stringify({
-            model,
-            max_tokens: 4096,
-            system: systemPrompt,
-            messages: conversationMessages,
-            stream: true,
-          }),
+          body: JSON.stringify(streamBody),
         });
 
         if (!streamResponse.ok || !streamResponse.body) {
@@ -935,6 +1077,7 @@ async function runAnthropicAgent(
         const reader = streamResponse.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let isInThinkingBlock = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -950,10 +1093,39 @@ async function runAnthropicAgent(
               if (data === '[DONE]') continue;
               try {
                 const parsed = JSON.parse(data);
-                // Anthropic streaming format
-                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  const textData = { type: 'text', content: parsed.delta.text };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+
+                // Track thinking block state
+                if (parsed.type === 'content_block_start') {
+                  if (parsed.content_block?.type === 'thinking') {
+                    isInThinkingBlock = true;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
+                  } else if (parsed.content_block?.type === 'text') {
+                    isInThinkingBlock = false;
+                  }
+                }
+
+                // Handle thinking delta (extended thinking content)
+                if (parsed.type === 'content_block_delta') {
+                  if (parsed.delta?.type === 'thinking_delta' && parsed.delta?.thinking) {
+                    const thinkingData = { type: 'thinking', content: parsed.delta.thinking };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(thinkingData)}\n\n`));
+                  }
+                  // Handle text delta (final response)
+                  else if (parsed.delta?.type === 'text_delta' && parsed.delta?.text) {
+                    const textData = { type: 'text', content: parsed.delta.text };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                  // Legacy format support
+                  else if (parsed.delta?.text) {
+                    const textData = { type: 'text', content: parsed.delta.text };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                }
+
+                // Mark end of thinking block
+                if (parsed.type === 'content_block_stop' && isInThinkingBlock) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
+                  isInThinkingBlock = false;
                 }
               } catch (e) { }
             }
@@ -971,16 +1143,41 @@ async function runAnthropicAgent(
   });
 }
 
+/**
+ * Truncate messages to avoid rate limits
+ * Keep last N messages, prioritizing recent context
+ */
+function truncateMessages(messages: any[], maxMessages: number = 10): any[] {
+  if (messages.length <= maxMessages) return messages;
+  // Keep first message (might have important context) and last N-1 messages
+  return [messages[0], ...messages.slice(-(maxMessages - 1))];
+}
+
+/**
+ * Truncate code to avoid token overflow
+ */
+function truncateCode(code: string, maxChars: number = 4000): string {
+  if (!code || code.length <= maxChars) return code;
+  return code.slice(0, maxChars) + '\n// ... (код сокращён для экономии токенов)';
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { messages, apiKey, provider, model, currentCode, selectedCode } = body;
+    let { messages, apiKey, provider, model, currentCode, selectedCode } = body;
 
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'API ключ не указан' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Truncate to avoid rate limits
+    messages = truncateMessages(messages, 10);
+    currentCode = truncateCode(currentCode || '', 4000);
+    if (selectedCode) {
+      selectedCode = truncateCode(selectedCode, 2000);
     }
 
     let stream: ReadableStream;

@@ -23,12 +23,34 @@ export function Header({ context, embedded = false }) {
   const [volume, setVolume] = useState(masterVolume);
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(masterVolume);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  // Undo/redo availability
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   // Sync volume with settings on mount and when settings change
   useEffect(() => {
     setVolume(masterVolume);
     setMasterVolume(masterVolume);
   }, [masterVolume]);
+
+  // Check undo/redo availability periodically
+  useEffect(() => {
+    const checkUndoRedo = () => {
+      const editor = editorRef?.current?.editor;
+      if (editor) {
+        // Check if there's undo history
+        const undoDepth = editor.state.field?.(editor.state.field, false)?.done?.length;
+        const redoDepth = editor.state.field?.(editor.state.field, false)?.undone?.length;
+        // Simple check: if we can read history state
+        setCanUndo(editor.state.doc.length > 0);
+        setCanRedo(false); // Will be updated after actual undo
+      }
+    };
+    const interval = setInterval(checkUndoRedo, 500);
+    return () => clearInterval(interval);
+  }, [editorRef]);
 
   // Handle volume change
   const handleVolumeChange = useCallback((e) => {
@@ -63,6 +85,7 @@ export function Header({ context, embedded = false }) {
   // Handle undo
   const handleUndo = useCallback(() => {
     editorRef?.current?.undo?.();
+    setCanRedo(true);
   }, [editorRef]);
 
   // Handle redo
@@ -120,7 +143,43 @@ export function Header({ context, embedded = false }) {
         </h1>
       </div>
       {!isZen && !isButtonRowHidden && (
-        <div className="flex max-w-full overflow-auto text-foreground px-1 md:px-2">
+        <div className="flex max-w-full overflow-auto text-foreground px-1 md:px-2 items-center">
+          {/* Volume control - LEFT of play, hidden slider on hover */}
+          <div
+            className={cx('relative flex items-center', !isEmbedded ? 'pr-1' : 'pr-0')}
+            onMouseEnter={() => setShowVolumeSlider(true)}
+            onMouseLeave={() => setShowVolumeSlider(false)}
+          >
+            <button
+              onClick={handleMuteToggle}
+              title={isMuted || volume === 0 ? 'включить звук' : 'выключить звук'}
+              className="hover:opacity-50 p-1"
+            >
+              {isMuted || volume === 0 ? (
+                <SpeakerXMarkIcon className="w-5 h-5" />
+              ) : (
+                <SpeakerWaveIcon className="w-5 h-5" />
+              )}
+            </button>
+            {/* Slider appears on hover */}
+            <div className={cx(
+              'absolute left-full ml-1 flex items-center bg-lineHighlight rounded px-2 py-1 z-50 transition-opacity duration-150',
+              showVolumeSlider ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                title={`Громкость: ${Math.round(volume * 100)}%`}
+                className="w-20 h-1 bg-foreground/30 rounded-lg appearance-none cursor-pointer accent-foreground"
+              />
+              <span className="text-xs ml-2 opacity-70 w-8">{Math.round(volume * 100)}%</span>
+            </div>
+          </div>
+          {/* Play/Stop button */}
           <button
             onClick={handleTogglePlay}
             title={started ? 'стоп' : 'играть'}
@@ -139,47 +198,6 @@ export function Header({ context, embedded = false }) {
               <>загрузка...</>
             )}
           </button>
-          {/* Volume control */}
-          <div className={cx('flex items-center', !isEmbedded ? 'px-2' : 'px-1')}>
-            <button
-              onClick={handleMuteToggle}
-              title={isMuted || volume === 0 ? 'включить звук' : 'выключить звук'}
-              className="hover:opacity-50 p-1"
-            >
-              {isMuted || volume === 0 ? (
-                <SpeakerXMarkIcon className="w-5 h-5" />
-              ) : (
-                <SpeakerWaveIcon className="w-5 h-5" />
-              )}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={handleVolumeChange}
-              title={`Громкость: ${Math.round(volume * 100)}%`}
-              className="w-16 md:w-20 h-1 bg-foreground/30 rounded-lg appearance-none cursor-pointer accent-foreground"
-            />
-          </div>
-          {/* Undo/Redo buttons */}
-          <div className={cx('flex items-center', !isEmbedded ? 'px-1' : 'px-0')}>
-            <button
-              onClick={handleUndo}
-              title="отменить (Ctrl+Z)"
-              className="hover:opacity-50 p-1"
-            >
-              <ArrowUturnLeftIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleRedo}
-              title="повторить (Ctrl+Shift+Z)"
-              className="hover:opacity-50 p-1"
-            >
-              <ArrowUturnRightIcon className="w-5 h-5" />
-            </button>
-          </div>
           <button
             onClick={handleEvaluate}
             title="обновить"
@@ -191,15 +209,6 @@ export function Header({ context, embedded = false }) {
           >
             {!isEmbedded && <span>обновить</span>}
           </button>
-          {/* !isEmbedded && (
-            <button
-              title="shuffle"
-              className="hover:opacity-50 p-2 flex items-center space-x-1"
-              onClick={handleShuffle}
-            >
-              <span> shuffle</span>
-            </button>
-          ) */}
           {!isEmbedded && (
             <button
               title="поделиться"
@@ -221,26 +230,27 @@ export function Header({ context, embedded = false }) {
               <span>уроки</span>
             </a>
           )}
-          {/* {isEmbedded && (
-            <button className={cx('hover:opacity-50 px-2')}>
-              <a href={window.location.href} target="_blank" rel="noopener noreferrer" title="Open in REPL">
-                🚀
-              </a>
+          {/* Spacer to push undo/redo to the right */}
+          <div className="flex-1" />
+          {/* Undo/Redo buttons - RIGHT side, closer to editor */}
+          <div className={cx('flex items-center', !isEmbedded ? 'px-1' : 'px-0')}>
+            <button
+              onClick={handleUndo}
+              title="отменить (Ctrl+Z)"
+              className={cx('p-1', canUndo ? 'hover:opacity-50' : 'opacity-30 cursor-not-allowed')}
+              disabled={!canUndo}
+            >
+              <ArrowUturnLeftIcon className="w-5 h-5" />
             </button>
-          )}
-          {isEmbedded && (
-            <button className={cx('hover:opacity-50 px-2')}>
-              <a
-                onClick={() => {
-                  window.location.href = initialUrl;
-                  window.location.reload();
-                }}
-                title="Reset"
-              >
-                💔
-              </a>
+            <button
+              onClick={handleRedo}
+              title="повторить (Ctrl+Shift+Z)"
+              className={cx('p-1', canRedo ? 'hover:opacity-50' : 'opacity-30 cursor-not-allowed')}
+              disabled={!canRedo}
+            >
+              <ArrowUturnRightIcon className="w-5 h-5" />
             </button>
-          )} */}
+          </div>
         </div>
       )}
     </header>

@@ -21,11 +21,7 @@ export function WelcomeTab({ context }) {
         <a href={`${baseNoTrailing}/workshop/getting-started/`} target="_blank">
           интерактивный туториал
         </a>
-        . Также присоединяйтесь к{' '}
-        <a href="https://discord.com/invite/HGEdXmRkzT" target="_blank">
-          discord-каналу
-        </a>{' '}
-        для вопросов и общения.
+        .
       </p>
       <h3>🍞 о проекте</h3>
       <p>
@@ -37,21 +33,11 @@ export function WelcomeTab({ context }) {
         <a href="https://tidalcycles.org/" target="_blank">
           TidalCycles
         </a>
-        . Оригинальный Strudel создан Alex McLean и сообществом. Это свободное ПО под лицензией{' '}
-        <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE" target="_blank">
-          GNU Affero General Public License
-        </a>
-        . Исходный код Bulka доступен на{' '}
+        . Оригинальный Strudel создан Alex McLean и сообществом. Исходный код Bulka доступен на{' '}
         <a href="https://github.com/timoncool/Bulka" target="_blank">
           GitHub
         </a>
-        . Информация о лицензировании звуков:{' '}
-        <a href="https://github.com/felixroos/dough-samples/blob/main/README.md">dough-samples</a>.
-        Поддержите оригинальный проект на{' '}
-        <a href="https://opencollective.com/tidalcycles" target="_blank">
-          Open Collective
-        </a>
-        {' '}💖
+        .
       </p>
       <p>
         Проект развивается{' '}

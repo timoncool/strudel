@@ -28,8 +28,8 @@ const MODELS = {
     { value: 'o1', label: 'o1 (рассуждения)' },
   ],
   anthropic: [
-    { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5 (новейший)' },
-    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+    { value: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5 (топ)' },
+    { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
     { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (быстрый)' },
   ],
 };

@@ -901,7 +901,26 @@ async function runAnthropicAgent(
           continue;
         }
 
-        // No tool use - stream the final text response
+        // No tool use - stream the final text response with extended thinking
+        // Check if model supports thinking (claude-sonnet-4, claude-opus-4, etc.)
+        const supportsThinking = model.includes('sonnet-4') || model.includes('opus-4') || model.includes('claude-4');
+
+        const streamBody: any = {
+          model,
+          max_tokens: 16000,
+          system: systemPrompt,
+          messages: conversationMessages,
+          stream: true,
+        };
+
+        // Enable extended thinking for supported models
+        if (supportsThinking) {
+          streamBody.thinking = {
+            type: 'enabled',
+            budget_tokens: 8000,
+          };
+        }
+
         const streamResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -909,13 +928,7 @@ async function runAnthropicAgent(
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
           },
-          body: JSON.stringify({
-            model,
-            max_tokens: 4096,
-            system: systemPrompt,
-            messages: conversationMessages,
-            stream: true,
-          }),
+          body: JSON.stringify(streamBody),
         });
 
         if (!streamResponse.ok || !streamResponse.body) {
@@ -935,6 +948,7 @@ async function runAnthropicAgent(
         const reader = streamResponse.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let isInThinkingBlock = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -950,10 +964,39 @@ async function runAnthropicAgent(
               if (data === '[DONE]') continue;
               try {
                 const parsed = JSON.parse(data);
-                // Anthropic streaming format
-                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  const textData = { type: 'text', content: parsed.delta.text };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+
+                // Track thinking block state
+                if (parsed.type === 'content_block_start') {
+                  if (parsed.content_block?.type === 'thinking') {
+                    isInThinkingBlock = true;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
+                  } else if (parsed.content_block?.type === 'text') {
+                    isInThinkingBlock = false;
+                  }
+                }
+
+                // Handle thinking delta (extended thinking content)
+                if (parsed.type === 'content_block_delta') {
+                  if (parsed.delta?.type === 'thinking_delta' && parsed.delta?.thinking) {
+                    const thinkingData = { type: 'thinking', content: parsed.delta.thinking };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(thinkingData)}\n\n`));
+                  }
+                  // Handle text delta (final response)
+                  else if (parsed.delta?.type === 'text_delta' && parsed.delta?.text) {
+                    const textData = { type: 'text', content: parsed.delta.text };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                  // Legacy format support
+                  else if (parsed.delta?.text) {
+                    const textData = { type: 'text', content: parsed.delta.text };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                }
+
+                // Mark end of thinking block
+                if (parsed.type === 'content_block_stop' && isInThinkingBlock) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
+                  isInThinkingBlock = false;
                 }
               } catch (e) { }
             }

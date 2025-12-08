@@ -21,14 +21,16 @@ const SUGGESTIONS = [
 
 const MODELS = {
   openai: [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (быстрый)' },
-    { value: 'gpt-4o', label: 'GPT-4o (умный)' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+    { value: 'gpt-5.1', label: 'GPT-5.1 (топ)' },
+    { value: 'gpt-5.1-instant', label: 'GPT-5.1 Instant (быстрый)' },
+    { value: 'gpt-5', label: 'GPT-5' },
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'o1', label: 'o1 (рассуждения)' },
   ],
   anthropic: [
-    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku (быстрый)' },
+    { value: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5 (топ)' },
+    { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
+    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (быстрый)' },
   ],
 };
 
@@ -264,6 +266,22 @@ export function ChatTab({ context }) {
       {chat.error && (
         <div className="mx-3 mb-2 p-2 text-xs text-red-400 bg-red-500/10 rounded-md border border-red-500/30">
           {chat.error}
+        </div>
+      )}
+
+      {/* Code Applied Indicator */}
+      {chat.pendingCode && (
+        <div className="mx-3 mb-2 p-2 bg-selection/30 rounded-md border border-selection/50">
+          <div className="flex items-center gap-2 text-xs text-foreground">
+            <span className="text-green-400">✓</span>
+            <span>Код применён в редактор</span>
+            <button
+              onClick={chat.dismissPendingCode}
+              className="ml-auto text-foreground/50 hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

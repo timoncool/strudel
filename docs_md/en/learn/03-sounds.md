@@ -8,9 +8,17 @@ layout: ../../layouts/MainLayout.astro
 We can play sounds with `s`, in two different ways:
 
 - `s` can trigger audio samples, where a sound file is loaded in the background and played back:
-  <!-- Interactive example available in web version -->
+  
+```javascript
+s("bd hh sd hh")
+```
+
 - `s` can trigger audio synthesisers, which are synthesised in real-time using code also running in the background:
-  <!-- Interactive example available in web version -->
+  
+```javascript
+s("sawtooth square triangle sine")
+```
+
 
 You can learn more about both of these approaches in the pages [Synths](/learn/synths) and [Samples](/learn/samples).
 
@@ -20,17 +28,33 @@ In both of the above cases, we are no longer directly controlling the `note`/`fr
 
 So how can we both control the sound and the pitch? We can _combine_ `note`/`freq` with `s` to change the sound of our pitches:
 
-<!-- Interactive example available in web version -->
 
-<!-- Interactive example available in web version -->
+```javascript
+note("a3 c#4 e4 a4").s("sawtooth")
+```
 
-<!-- Interactive example available in web version -->
+
+
+```javascript
+note("57 61 64 69").s("sine")
+```
+
+
+
+```javascript
+freq("220 275 330 440").s("triangle")
+```
+
 
 The last example will actually sound the same with or without `s`, because `triangle` is the default value for `s`.
 
 What about combining different notes with different sounds at the same time?
 
-<!-- Interactive example available in web version -->
+
+```javascript
+freq("220 275 330 440 550").s("triangle sawtooth sine")
+```
+
 
 Hmm, something interesting is going on there, related to there being five notes and three sounds.
 

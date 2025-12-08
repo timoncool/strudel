@@ -71,4 +71,3 @@ Now here is what happens when a sound is played:
 When the webaudio output plays a `Hap`, it will lookup and call the `onTrigger` function for the given `s`.
 The returned `node` can then be connected to the rest of the standard effects chain
 Having the stop function separate allows playing sounds via midi too, where you don't know how long the noteon will last
-

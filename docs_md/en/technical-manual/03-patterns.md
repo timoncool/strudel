@@ -9,9 +9,12 @@ Patterns are the essence of Tidal. Its patterns are abstract entities that repre
 From now on, this process of generating events from a time span will be called **querying**.
 Example:
 
-<!-- MINIREPL_START --> e.show()))
-silence`}
-/>
+```javascript
+const pattern = sequence("c3", ["e3", "g3"])
+const events = pattern.queryArc(0, 1)
+console.log(events.map((e) => e.show()))
+silence
+```
 
 In this example, we create a pattern using the `sequence` function and **query** it for the time span from `0` to `1`.
 Those numbers represent units of time called **cycles**. The length of one cycle depends on the tempo, which defaults to one cycle per second.
@@ -32,4 +35,3 @@ Note that the query function is not just a way to access a pattern, but true to 
 The above examples do not represent how Strudel is used in practice. In the live coding editor, the user only has to type in the pattern itself, the querying will be handled by the scheduler. The scheduler will repeatedly query the pattern for events, which are then scheduled as sound synthesis or other event triggers.
 
 Can we [align](/technical-manual/alignment) patterns?
-

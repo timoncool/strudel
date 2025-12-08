@@ -25,4 +25,3 @@ The snapshot (`.snap`) files contain all haps within a certain number of cycles 
 They allow testing for breaking changes on a larger scale.
 If breaking changes are intentional, the snapshots can be updated with `npm run snapshot`.
 Just make sure to verify that all affected patterns behave as expected.
-

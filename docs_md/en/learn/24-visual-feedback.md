@@ -3,9 +3,23 @@ title: Visual Feedback
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+note("c a f e").color("white")
+._punchcard()
+.color("cyan")
+```
+
 # Visual Feedback
 
 There are several function that add visual feedback to your patterns.
+
+
+```javascript
+note("c a f e").color("white")
+._pianoroll()
+.color("cyan")
+```
 
 ## Mini Notation Highlighting
 
@@ -30,11 +44,24 @@ The following functions all come with in 2 variants.
 
 **Without prefix**: renders the visual to the background of the page:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+n("<0 2 1 3 2>*8")
+.scale("<A1 D2>/4:minor:pentatonic")
+.s("supersaw").lpf(300).lpenv("<4 3 2>\*4")
+```
+
 
 **With `_` prefix**: renders the visual inside the code. Allows for multiple visuals
 
-<!-- Interactive example available in web version -->
+
+```javascript
+n("<0 2 1 3 2>*8")
+.scale("<A1 D2>/4:minor:pentatonic")
+.s("supersaw").lpf(300).lpenv("<4 3 2>*4")
+.color("cyan magenta")
+```
+
 
 Here we see the 2 variants for `punchcard`. The same goes for all others below.
 To improve readability the following demos will all use the inline variant.
@@ -45,12 +72,20 @@ These 2 functions render a pianoroll style visual.
 The only difference between the 2 is that `pianoroll` will render the pattern directly,
 while `punchcard` will also take the transformations into account that occur afterwards:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").color("white").punchcard()
+```
+
 
 Here, the `color` is still visible in the visual, even if it is applied after `_punchcard`.
 On the contrary, the color is not visible when using `_pianoroll`:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").color("white")._punchcard()
+```
+
 
 <Box>
 

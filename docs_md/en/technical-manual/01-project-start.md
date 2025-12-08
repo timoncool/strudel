@@ -107,7 +107,7 @@ The upside of using the repl without an iframe is that you can pin the strudel v
 <script src="https://unpkg.com/@strudel/repl@1.0.2"></script>
 <strudel-editor>
   <!--
-...  
+...
 -->
 </strudel-editor>
 ```
@@ -142,4 +142,3 @@ There are actually many more packages you can use to have fine grained control o
 To use these packages, you have to use a bundler that supports es modules, like [vite](https://vitejs.dev/).
 
 To find out more about the purpose of each package, see [Packages](/technical-manual/packages)
-

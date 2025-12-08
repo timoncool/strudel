@@ -11,9 +11,9 @@ This is the first chapter of the Strudel Workshop, nice to have you on board!
 
 The workshop is full of interactive code fields. Let's learn how to use those. Here is one:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("casio")
+```
 
 1. ⬆️ click into the text field above ⬆️
 2. press `ctrl`+`enter` to play
@@ -21,17 +21,15 @@ The workshop is full of interactive code fields. Let's learn how to use those. H
 4. press `ctrl`+`enter` to update
 5. press `ctrl`+`.` to stop
 
-</Box>
-
 Congratulations, you are now live coding!
 
 ## Sounds
 
 We have just played a sound with `sound` like this:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("casio")
+```
 
 `casio` is one of many standard sounds.
 
@@ -43,23 +41,19 @@ insect wind jazz metal east crow casio space numbers
 
 You might hear a little pause while the sound is loading
 
-</Box>
-
 **Change Sample Number with :**
 
 One Sound can contain multiple samples (audio files).
 
 You can select the sample by appending `:` followed by a number to the name:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("casio:1")
+```
 
 Try different sound / sample number combinations.
 
 Not adding a number is like doing `:0`
-
-</Box>
 
 Now you know how to use different sounds.
 For now we'll stick to this little selection of sounds, but we'll find out how to load your own sounds later.
@@ -68,9 +62,9 @@ For now we'll stick to this little selection of sounds, but we'll find out how t
 
 By default, Strudel comes with a wide selection of drum sounds:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("bd hh sd oh")
+```
 
 These letter combinations stand for different parts of a drum set:
 
@@ -93,16 +87,14 @@ These letter combinations stand for different parts of a drum set:
 
 Try out different drum sounds!
 
-</Box>
-
 To change the sound character of our drums, we can use `bank` to change the drum machine:
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd hh sd oh").bank("RolandTR909")
+```
 
 In this example `RolandTR909` is the name of the drum machine that we're using.
 It is a famous drum machine for house and techno beats.
-
-<Box>
 
 Try changing `RolandTR909` to one of
 
@@ -116,25 +108,23 @@ There are a lot more, but let's keep it simple for now
 
 🦥 Pro-Tip: Mark a name via double click. Then just copy and paste!
 
-</Box>
-
 ## Sequences
 
 In the last example, we already saw that you can play multiple sounds in a sequence by separating them with a space:
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd hh sd hh")
+```
 
 Notice how the currently playing sound is highlighted in the code and also visualized below.
 
-<Box>
-
 Try adding more sounds to the sequence!
-
-</Box>
 
 **The longer the sequence, the faster it runs**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd bd hh bd rim bd hh bd")
+```
 
 The content of a sequence will be squished into what's called a cycle. A cycle is 2s long by default.
 
@@ -142,17 +132,19 @@ The content of a sequence will be squished into what's called a cycle. A cycle i
 
 Here is the same sequence, but this time sourrounded with `< .. >` (angle brackets):
 
-<!-- MINIREPL_START -->")`} punchcard />
+```javascript
+sound("<bd bd hh bd rim bd hh bd>")
+```
 
 This will play only one sound per cycle. With these brackets, the tempo doesn't change when we add or remove elements!
 
 Because this is now very slow, we can speed it up again like this:
 
-<!-- MINIREPL_START -->*8")`} punchcard />
+```javascript
+sound("<bd bd hh bd rim bd hh bd>*8")
+```
 
 Here, the `*8` means we make the whole thing 8 times faster.
-
-<Box>
 
 Wait a minute, isn't this the same as without `< ... >*8`? Why do we need it then?
 
@@ -160,15 +152,12 @@ That's true, the special thing about this notation is that the tempo won't chang
 
 Try also changing the number at the end to change the tempo!
 
-</Box>
-
 **changing the tempo with setcpm**
 
-<!-- MINIREPL_START -->*8")`}
-  punchcard
-/>
-
-<Box>
+```javascript
+setcpm(90/4)
+sound("<bd hh rim hh>*8")
+```
 
 cpm = cycles per minute
 
@@ -177,85 +166,93 @@ By default, the tempo is 30 cycles per minute = 120/4 = 1 cycle every 2 seconds
 In western music terms, you could say the above are 8ths notes at 90bpm in 4/4 time.
 But don't worry if you don't know these terms, as they are not required to make music with Strudel.
 
-</Box>
-
 **Add a rests in a sequence with '-' or '~'**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd hh - rim - bd hh rim")
+```
 
 **Sub-Sequences with [brackets]**
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("bd [hh hh] sd [hh bd] bd - [hh sd] cp")
+```
 
 Try adding more sounds inside a bracket!
-
-</Box>
 
 Similar to the whole sequence, the content of a sub-sequence will be squished to its own length.
 
 **Multiplication: Speed things up**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd hh*2 rim hh*3 bd [- hh*2] rim hh*2")
+```
 
 **Multiplication: Speed up subsequences**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("bd [hh rim]*2 bd [hh rim]*1.5")
+```
 
 **Multiplication: Speeeeeeeeed things up**
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("bd hh*32 rim hh*16")
+```
 
 Pitch = really fast rhythm
 
-</Box>
-
 **Sub-Sub-Sequences with [[brackets]]**
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("bd [[rim rim] hh] bd cp")
+```
 
 You can go as deep as you want!
 
-</Box>
-
 **Play sequences in parallel with comma**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("hh hh hh, bd casio")
+```
 
 You can use as many commas as you want:
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("hh hh hh, bd bd, - casio")
+```
 
 Commas can also be used inside sub-sequences:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("hh hh hh, bd [bd,casio]")
+```
 
 Notice how the 2 above are the same?
 
 It is quite common that there are many ways to express the same idea.
 
-</Box>
-
 **Multiple Lines with backticks**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound(\`bd*2, - cp,
+- - - oh, hh*4,
+[- casio]*2\`)
+```
 
 **selecting sample numbers separately**
 
 Instead of selecting sample numbers one by one:
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("jazz:0 jazz:1 [jazz:4 jazz:2] jazz:3*2")
+```
 
 We can also use the `n` function to make it shorter and more readable:
 
-<!-- Interactive example available in web version -->
+```javascript
+n("0 1 [4 2] 3*2").sound("jazz")
+```
 
 ## Recap
 
@@ -264,60 +261,90 @@ This is what we've learned so far:
 
 | Concept           | Syntax   | Example                                                                 |
 | ----------------- | -------- | ----------------------------------------------------------------------- |
-| Sequence          | space    | <!-- Interactive example available in web version -->               |
-| Sample Number     | :x       | <!-- Interactive example available in web version -->       |
-| Rests             | - or ~   | <!-- Interactive example available in web version -->       |
-| Alternate         | \<\>     | <!-- MINIREPL_START -->")`} />     |
-| Sub-Sequences     | \[\]     | <!-- Interactive example available in web version -->   |
-| Sub-Sub-Sequences | \[\[\]\] | <!-- Interactive example available in web version --> |
-| Speed up          | \*       | <!-- Interactive example available in web version -->              |
-| Parallel          | ,        | <!-- Interactive example available in web version -->        |
+| Sequence          | space    | `sound("bd bd sd hh")`               |
+| Sample Number     | :x       | `sound("hh:0 hh:1 hh:2 hh:3")`       |
+| Rests             | - or ~   | `sound("metal - jazz jazz:1")`       |
+| Alternate         | \<\>     | `sound("<bd hh rim oh bd rim>")`     |
+| Sub-Sequences     | \[\]     | `sound("bd wind [metal jazz] hh")`   |
+| Sub-Sub-Sequences | \[\[\]\] | `sound("bd [metal [jazz [sd cp]]]")` |
+| Speed up          | \*       | `sound("bd sd*2 cp*3")`              |
+| Parallel          | ,        | `sound("bd*2, hh*2 [hh oh]")`        |
 
 The Mini-Notation is usually used inside some function. These are the functions we've seen so far:
 
 | Name   | Description                         | Example                                                                           |
 | ------ | ----------------------------------- | --------------------------------------------------------------------------------- |
-| sound  | plays the sound of the given name   | <!-- Interactive example available in web version -->                     |
-| bank   | selects the sound bank              | <!-- Interactive example available in web version --> |
-| setcpm | sets the tempo in cycles per minute | <!-- Interactive example available in web version -->         |
-| n      | select sample number                | <!-- Interactive example available in web version -->           |
+| sound  | plays the sound of the given name   | `sound("bd sd [- bd] sd")`                     |
+| bank   | selects the sound bank              | `sound("bd sd [- bd] sd").bank("RolandTR909")` |
+| setcpm | sets the tempo in cycles per minute | `setcpm(45); sound("bd sd [- bd] sd")`         |
+| n      | select sample number                | `n("0 1 4 2 0 6 3 2").sound("jazz")`           |
 
 ## Examples
 
 **Basic rock beat**
 
-<!-- Interactive example available in web version -->
+```javascript
+setcpm(100/4)
+sound("[bd sd]*2, hh*8").bank("RolandTR505")
+```
 
 **Classic house**
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("bd*4, [- cp]*2, [- hh]*4").bank("RolandTR909")
+```
 
 Notice that the two patterns are extremely similar.
 Certain drum patterns are reused across genres.
 
-</Box>
-
 We Will Rock you
 
-<!-- Interactive example available in web version -->
+```javascript
+setcpm(81/2)
+sound("bd*2 cp").bank("RolandTR707")
+```
 
 **Yellow Magic Orchestra - Firecracker**
 
-<!-- Interactive example available in web version -->
+```javascript
+setcpm(120/2)
+sound("bd sd, - - - hh - hh - -, - perc - perc:1*2")
+.bank("RolandCompurhythm1000")
+```
 
 **Imitation of a 16 step sequencer**
 
-<!-- Interactive example available in web version -->
+```javascript
+
+setcpm(90/4)
+sound(\`
+[-  -  oh - ] [-  -  -  - ] [-  -  -  - ] [-  -  -  - ],
+[hh hh -  - ] [hh -  hh - ] [hh -  hh - ] [hh -  hh - ],
+[-  -  -  - ] [cp -  -  - ] [-  -  -  - ] [cp -  -  - ],
+[bd -  -  - ] [-  -  -  bd] [-  -  bd - ] [-  -  -  bd]
+\`)
+```
 
 **Another one**
 
-<!-- Interactive example available in web version -->
+```javascript
+setcpm(88/4)
+sound(\`
+[-  -  -  - ] [-  -  -  - ] [-  -  -  - ] [-  -  oh:1 - ],
+[hh hh hh hh] [hh hh hh hh] [hh hh hh hh] [hh hh -  - ],
+[-  -  -  - ] [cp -  -  - ] [-  -  -  - ] [~  cp -  - ],
+[bd bd -  - ] [-  -  bd - ] [bd bd - bd ] [-  -  -  - ]
+\`).bank("RolandTR808")
+```
 
 **Not your average drums**
 
-<!-- Interactive example available in web version -->
+```javascript
+setcpm(100/2)
+s(\`jazz*2,
+insect [crow metal] - -,
+- space:4 - space:1,
+- wind\`)
+```
 
 Now that we know the basics of how to make beats, let's look at how we can play [notes](/workshop/first-notes)
-

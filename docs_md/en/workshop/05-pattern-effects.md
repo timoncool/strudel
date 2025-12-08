@@ -11,73 +11,80 @@ In this chapter, we are going to look at functions that are more unique to tidal
 
 **reverse patterns with rev**
 
-<!-- Interactive example available in web version -->
+```javascript
+n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").rev()
+```
 
 **play pattern left and modify it right with jux**
 
-<!-- Interactive example available in web version -->
+```javascript
+n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").jux(rev)
+```
 
 This is the same as:
 
-<!-- Interactive example available in web version -->
+```javascript
+$: n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").pan(0)
+$: n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").pan(1).rev()
+```
 
 Let's visualize what happens here:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+$: n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").pan(0).color("cyan")
+$: n("0 1 [4 3] 2 0 2 [~ 3] 4").sound("jazz").pan(1).color("magenta").rev()
+```
 
 Try commenting out one of the two by adding `//` before a line
 
-</Box>
-
 **multiple tempos**
 
-<!-- Interactive example available in web version -->
+```javascript
+note("c2, eb3 g3 [bb3 c4]").sound("piano").slow("0.5,1,1.5")
+```
 
 This is like doing
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+$: note("c2, eb3 g3 [bb3 c4]").s("piano").slow(0.5).color('cyan')
+$: note("c2, eb3 g3 [bb3 c4]").s("piano").slow(1).color('magenta')
+$: note("c2, eb3 g3 [bb3 c4]").s("piano").slow(1.5).color('yellow')
+```
 
 Try commenting out one or more by adding `//` before a line
 
-</Box>
-
 **add**
 
-<!-- MINIREPL_START -->>"))
+```javascript
+setcpm(60)
+note("c2 [eb3,g3] ".add("<0 <1 -1>>"))
 .color("<cyan <magenta yellow>>").adsr("[.1 0]:.2:[1 0]")
-.sound("gm_acoustic_bass").room(.5)`}
-  punchcard
-/>
-
-<Box>
+.sound("gm_acoustic_bass").room(.5)
+```
 
 If you add a number to a note, the note will be treated as if it was a number
 
-</Box>
-
 We can add as often as we like:
 
-<!-- MINIREPL_START -->>").add("0,7"))
+```javascript
+setcpm(60)
+note("c2 [eb3,g3]".add("<0 <1 -1>>").add("0,7"))
 .color("<cyan <magenta yellow>>").adsr("[.1 0]:.2:[1 0]")
-.sound("gm_acoustic_bass").room(.5)`}
-  punchcard
-/>
+.sound("gm_acoustic_bass").room(.5)
+```
 
 **add with scale**
 
-<!-- MINIREPL_START --> [~ <4 1>]".add("<0 [0,2,4]>"))
+```javascript
+n("0 [2 4] <3 5> [~ <4 1>]".add("<0 [0,2,4]>"))
 .scale("C5:minor").release(.5)
-.sound("gm_xylophone").room(.5)`}
-  punchcard
-/>
+.sound("gm_xylophone").room(.5)
+```
 
 **time to stack**
 
-<!-- MINIREPL_START --> [~ <4 1>]".add("<0 [0,2,4]>"))
+```javascript
+$: n("0 [2 4] <3 5> [~ <4 1>]".add("<0 [0,2,4]>"))
   .scale("C5:minor")
   .sound("gm_xylophone")
   .room(.4).delay(.125)
@@ -85,34 +92,32 @@ $: note("c2 [eb3,g3]".add("<0 <1 -1>>"))
   .adsr("[.1 0]:.2:[1 0]")
   .sound("gm_acoustic_bass")
   .room(.5)
-$: n("0 1 [2 3] 2").sound("jazz").jux(rev)`}
-/>
+$: n("0 1 [2 3] 2").sound("jazz").jux(rev)
+```
 
 **ply**
 
-<!-- Interactive example available in web version -->
+```javascript
+sound("hh hh, bd rim [~ cp] rim").bank("RolandTR707").ply(2)
+```
 
 this is like writing:
 
-<!-- Interactive example available in web version -->
-
-<Box>
+```javascript
+sound("hh*2 hh*2, bd*2 rim*2 [~ cp*2] rim*2").bank("RolandTR707")
+```
 
 Try patterning the `ply` function, for example using `"<1 2 1 3>"`
 
-</Box>
-
 **off**
 
-<!-- MINIREPL_START -->] <2 3> [~ 1]"
+```javascript
+n("0 [4 <3 2>] <2 3> [~ 1]"
   .off(1/16, x=>x.add(4))
   //.off(1/8, x=>x.add(7))
 ).scale("<C5:minor Db5:mixolydian>/2")
-.s("triangle").room(.5).dec(.1)`}
-  punchcard
-/>
-
-<Box>
+.s("triangle").room(.5).dec(.1)
+```
 
 In the notation `.off(1/16, x=>x.add(4))`, says:
 
@@ -120,19 +125,18 @@ In the notation `.off(1/16, x=>x.add(4))`, says:
 - modify `x` with `.add(4)`, and
 - play it offset to the original pattern by `1/16` of a cycle.
 
-</Box>
-
 off is also useful for modifying other sounds, and can even be nested:
 
-<!-- MINIREPL_START -->x.speed(1.5).gain(.25)
-  .off(3/16, y=>y.vowel("<a e i o>*8")))`}
-/>
+```javascript
+s("bd sd [rim bd] sd,[~ hh]*4").bank("CasioRZ1")
+  .off(2/16, x=>x.speed(1.5).gain(.25)
+  .off(3/16, y=>y.vowel("<a e i o>*8")))
+```
 
 | name | description                    | example                                                                                     |
 | ---- | ------------------------------ | ------------------------------------------------------------------------------------------- |
-| rev  | reverse                        | <!-- Interactive example available in web version -->            |
-| jux  | split left/right, modify right | <!-- Interactive example available in web version -->         |
-| add  | add numbers / notes            | <!-- MINIREPL_START -->")).scale("C:minor")`} /> |
-| ply  | speed up each event n times    | <!-- MINIREPL_START -->")`} />                    |
-| off  | copy, shift time & modify      | <!-- MINIREPL_START -->x.speed(2))`} />    |
-
+| rev  | reverse                        | `n("0 2 4 6 ~ 7 9 5").scale("C:minor").rev()`            |
+| jux  | split left/right, modify right | `n("0 2 4 6 ~ 7 9 5").scale("C:minor").jux(rev)`         |
+| add  | add numbers / notes            | `n("0 2 4 6 ~ 7 9 5".add("<0 1 2 1>")).scale("C:minor")` |
+| ply  | speed up each event n times    | `s("bd sd [~ bd] sd").ply("<1 2 3>")`                    |
+| off  | copy, shift time & modify      | `s("bd sd [~ bd] sd, hh*8").off(1/16, x=>x.speed(2))`    |

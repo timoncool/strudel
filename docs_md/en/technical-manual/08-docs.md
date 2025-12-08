@@ -24,10 +24,12 @@ To add a Mini REPL, make sure to import:
 add a mini repl with
 
 ```jsx
-<!-- Interactive example available in web version -->
+```javascript
+note("a3 c#4 e4 a4")
+```
 ```
 
-- `` is required to tell astro that the repl should be interactive, see [Client Directive](https://docs.astro.build/en/reference/directives-reference/#client-directives)
+- ` ` is required to tell astro that the repl should be interactive, see [Client Directive](https://docs.astro.build/en/reference/directives-reference/#client-directives)
 - `tune`: be any valid pattern code
 - `punchcard`: if added, a punchcard / pianoroll visualization is renderd
 - `drawTime`: time window for drawing, defaults to `[0, 4]`
@@ -46,7 +48,7 @@ You can add the in-source documentation for a function by using the `JsDoc` comp
 Usage:
 
 ```jsx
-<!-- API documentation available in web version -->
+<JsDoc name="bandf" h={0} />
 ```
 
 - `name`: function name, as named with `@name` in jsdoc
@@ -76,4 +78,3 @@ Documentation is written with [jsdoc](https://jsdoc.app/) comments. Example:
 - Also, it is used for the `examples.test.mjs` snapshot test
 
 How does Strudel do its [Testing](/technical-manual/testing)?
-

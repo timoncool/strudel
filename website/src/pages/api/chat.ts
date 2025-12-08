@@ -1254,14 +1254,21 @@ export const POST: APIRoute = async ({ request }) => {
       selectedCode = truncateCode(selectedCode, 2000);
     }
 
+    if (!model) {
+      return new Response(
+        JSON.stringify({ error: 'Модель не выбрана. Обновите список моделей в настройках.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     let stream: ReadableStream;
 
     if (provider === 'anthropic') {
-      stream = await runAnthropicAgent(apiKey, model || 'claude-sonnet-4-5-20250929', messages, currentCode || '', selectedCode || null);
+      stream = await runAnthropicAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     } else if (provider === 'gemini') {
-      stream = await runGeminiAgent(apiKey, model || 'gemini-1.5-pro', messages, currentCode || '', selectedCode || null);
+      stream = await runGeminiAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     } else {
-      stream = await runOpenAIAgent(apiKey, model || 'gpt-4o', messages, currentCode || '', selectedCode || null);
+      stream = await runOpenAIAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     }
 
     return new Response(stream, {

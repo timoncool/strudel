@@ -2,7 +2,7 @@
  * ChatTab - AI Assistant Chat Interface
  */
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import cx from '@src/cx.mjs';
 import ReactMarkdown from 'react-markdown';
 import { useChatContext } from '../../useChatContext';
@@ -20,29 +20,69 @@ const SUGGESTIONS = [
   { label: 'Добавь эффект', prompt: 'Добавь реверберацию и задержку' },
 ];
 
-const MODELS = {
-  openai: [
-    { value: 'gpt-5.1', label: 'GPT-5.1 (топ, рассуждения)' },
-    { value: 'gpt-5', label: 'GPT-5 (flagship)' },
-    { value: 'gpt-5-mini', label: 'GPT-5 Mini (быстрый)' },
-    { value: 'o3-pro', label: 'o3-pro (глубокие рассуждения)' },
-    { value: 'o3', label: 'o3 (рассуждения)' },
-    { value: 'o4-mini', label: 'o4-mini (рассуждения быстрый)' },
-  ],
-  anthropic: [
-    { value: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5 (топ)' },
-    { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
-    { value: 'claude-haiku-4-5-20251015', label: 'Claude Haiku 4.5 (быстрый)' },
-  ],
-  gemini: [
-    { value: 'gemini-3.0-pro', label: 'Gemini 3.0 Pro (топ)' },
-    { value: 'gemini-3.0-deep-think', label: 'Gemini 3.0 Deep Think (рассуждения)' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-  ],
+// Fallback models (used if API fetch fails)
+const FALLBACK_MODELS = {
+  openai: [{ value: 'gpt-4o', label: 'gpt-4o' }],
+  anthropic: [{ value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' }],
+  gemini: [{ value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }],
 };
+
+const MODELS_STORAGE_KEY = 'bulka_cached_models';
+
+/**
+ * Load cached models from localStorage
+ */
+function loadCachedModels() {
+  try {
+    const cached = localStorage.getItem(MODELS_STORAGE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return {
+        openai: parsed.openai || FALLBACK_MODELS.openai,
+        anthropic: parsed.anthropic || FALLBACK_MODELS.anthropic,
+        gemini: parsed.gemini || FALLBACK_MODELS.gemini,
+      };
+    }
+  } catch (e) {
+    console.error('Error loading cached models:', e);
+  }
+  return null;
+}
+
+/**
+ * Save models to localStorage
+ */
+function saveCachedModels(models) {
+  try {
+    localStorage.setItem(MODELS_STORAGE_KEY, JSON.stringify(models));
+  } catch (e) {
+    console.error('Error saving models to cache:', e);
+  }
+}
+
+/**
+ * Fetch available models from provider API
+ */
+async function fetchModels(provider, apiKey) {
+  if (!apiKey) return null;
+  try {
+    const response = await fetch('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, apiKey }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.models || null;
+  } catch (e) {
+    console.error('Error fetching models:', e);
+    return null;
+  }
+}
 
 /**
  * Settings panel for API configuration - all keys stored separately
+ * Models are fetched dynamically from provider APIs
  */
 function SettingsPanel({ onClose }) {
   const settings = useSettings();
@@ -50,7 +90,82 @@ function SettingsPanel({ onClose }) {
   const [anthropicKey, setAnthropicKey] = useState(settings.anthropicApiKey || '');
   const [geminiKey, setGeminiKey] = useState(settings.geminiApiKey || '');
   const [provider, setProvider] = useState(settings.aiProvider || 'openai');
-  const [model, setModel] = useState(settings.aiModel || 'gpt-5');
+
+  // Dynamic models state - load from cache first
+  const [models, setModels] = useState(() => {
+    const cached = loadCachedModels();
+    return cached || {
+      openai: FALLBACK_MODELS.openai,
+      anthropic: FALLBACK_MODELS.anthropic,
+      gemini: FALLBACK_MODELS.gemini,
+    };
+  });
+
+  // Initialize model from settings or first available
+  const [model, setModel] = useState(() => {
+    if (settings.aiModel) return settings.aiModel;
+    const cached = loadCachedModels();
+    const providerModels = cached?.[settings.aiProvider || 'openai'] || FALLBACK_MODELS[settings.aiProvider || 'openai'];
+    return providerModels[0]?.value || '';
+  });
+  const [loadingModels, setLoadingModels] = useState({
+    openai: false,
+    anthropic: false,
+    gemini: false,
+  });
+
+  // Get current API key for provider
+  const getKeyForProvider = useCallback((p) => {
+    switch (p) {
+      case 'openai': return openaiKey;
+      case 'anthropic': return anthropicKey;
+      case 'gemini': return geminiKey;
+      default: return '';
+    }
+  }, [openaiKey, anthropicKey, geminiKey]);
+
+  // Fetch models when API key changes
+  const loadModelsForProvider = useCallback(async (p, key) => {
+    if (!key || key.length < 10) return;
+
+    setLoadingModels(prev => ({ ...prev, [p]: true }));
+    const fetchedModels = await fetchModels(p, key);
+    setLoadingModels(prev => ({ ...prev, [p]: false }));
+
+    if (fetchedModels && fetchedModels.length > 0) {
+      setModels(prev => {
+        const updated = { ...prev, [p]: fetchedModels };
+        // Save to localStorage
+        saveCachedModels(updated);
+        return updated;
+      });
+      // Set first model as default if current model not in list
+      if (p === provider && !fetchedModels.find(m => m.value === model)) {
+        setModel(fetchedModels[0].value);
+      }
+    }
+  }, [provider, model]);
+
+  // Track previous key values to detect changes
+  const prevKeysRef = useRef({ openai: openaiKey, anthropic: anthropicKey, gemini: geminiKey });
+
+  // Load models when key is first added (changes from empty to non-empty)
+  useEffect(() => {
+    const prev = prevKeysRef.current;
+
+    // Check if key was just added (was empty, now has value)
+    if (!prev.openai && openaiKey && openaiKey.length >= 10) {
+      loadModelsForProvider('openai', openaiKey);
+    }
+    if (!prev.anthropic && anthropicKey && anthropicKey.length >= 10) {
+      loadModelsForProvider('anthropic', anthropicKey);
+    }
+    if (!prev.gemini && geminiKey && geminiKey.length >= 10) {
+      loadModelsForProvider('gemini', geminiKey);
+    }
+
+    prevKeysRef.current = { openai: openaiKey, anthropic: anthropicKey, gemini: geminiKey };
+  }, [openaiKey, anthropicKey, geminiKey, loadModelsForProvider]);
 
   const handleSave = () => {
     setOpenaiApiKey(openaiKey);
@@ -71,6 +186,10 @@ function SettingsPanel({ onClose }) {
     }
   };
 
+  // Get current models for selected provider
+  const currentModels = models[provider] || FALLBACK_MODELS[provider];
+  const isLoadingCurrentModels = loadingModels[provider];
+
   return (
     <div className="p-4 space-y-4 text-foreground overflow-y-auto max-h-[70vh]">
       <h3 className="text-lg font-medium">Настройки AI</h3>
@@ -81,8 +200,13 @@ function SettingsPanel({ onClose }) {
         <select
           value={provider}
           onChange={(e) => {
-            setProvider(e.target.value);
-            setModel(MODELS[e.target.value][0].value);
+            const newProvider = e.target.value;
+            setProvider(newProvider);
+            // Set first model from new provider
+            const newModels = models[newProvider] || FALLBACK_MODELS[newProvider];
+            if (newModels.length > 0) {
+              setModel(newModels[0].value);
+            }
           }}
           className={selectClass}
         >
@@ -94,16 +218,31 @@ function SettingsPanel({ onClose }) {
 
       {/* Model */}
       <div className="grid gap-2">
-        <label className="text-sm">Модель</label>
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          className={selectClass}
-        >
-          {MODELS[provider]?.map((m) => (
-            <option key={m.value} value={m.value}>{m.label}</option>
-          ))}
-        </select>
+        <label className="text-sm flex items-center gap-2">
+          Модель
+          {isLoadingCurrentModels && <span className="text-xs opacity-50">загрузка...</span>}
+        </label>
+        <div className="flex gap-2">
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className={cx(selectClass, 'flex-1')}
+            disabled={isLoadingCurrentModels}
+          >
+            {currentModels.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => loadModelsForProvider(provider, getKeyForProvider(provider))}
+            disabled={isLoadingCurrentModels || !currentProviderHasKey()}
+            className="px-2 py-1 text-sm rounded border border-foreground/30 hover:bg-lineBackground disabled:opacity-30"
+            title="Обновить список моделей"
+          >
+            ↻
+          </button>
+        </div>
       </div>
 
       <hr className="border-foreground/20" />

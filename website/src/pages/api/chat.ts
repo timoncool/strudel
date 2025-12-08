@@ -619,8 +619,8 @@ async function runOpenAIAgent(
       while (maxIterations > 0) {
         maxIterations--;
 
-        // Check if model is a reasoning model (o1, o3, o4, gpt-5.1) - they don't support temperature/tools
-        const isReasoningModel = model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4') || model === 'gpt-5.1';
+        // Check if model is a reasoning model (o1, o1-mini) - they don't support temperature/tools
+        const isReasoningModel = model.startsWith('o1');
 
         // Build request body conditionally
         const checkBody: any = {
@@ -1254,14 +1254,21 @@ export const POST: APIRoute = async ({ request }) => {
       selectedCode = truncateCode(selectedCode, 2000);
     }
 
+    if (!model) {
+      return new Response(
+        JSON.stringify({ error: 'Модель не выбрана. Обновите список моделей в настройках.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     let stream: ReadableStream;
 
     if (provider === 'anthropic') {
-      stream = await runAnthropicAgent(apiKey, model || 'claude-sonnet-4-5-20250929', messages, currentCode || '', selectedCode || null);
+      stream = await runAnthropicAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     } else if (provider === 'gemini') {
-      stream = await runGeminiAgent(apiKey, model || 'gemini-3.0-pro', messages, currentCode || '', selectedCode || null);
+      stream = await runGeminiAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     } else {
-      stream = await runOpenAIAgent(apiKey, model || 'gpt-5', messages, currentCode || '', selectedCode || null);
+      stream = await runOpenAIAgent(apiKey, model, messages, currentCode || '', selectedCode || null);
     }
 
     return new Response(stream, {

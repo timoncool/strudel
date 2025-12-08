@@ -709,56 +709,185 @@ async function runOpenAIAgent(
         }
 
         // No tool calls - stream the final text response
-        const streamResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
+        // Check if model supports Responses API with reasoning (GPT-5.1, GPT-5)
+        const supportsResponses = model.includes('gpt-5') || model.includes('o1') || model.includes('o3') || model.includes('o4');
+
+        if (supportsResponses) {
+          // Use Responses API for GPT-5.1 with reasoning
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '🧠 Думаю...' })}\n\n`));
+
+          const responsesBody: any = {
             model,
-            messages: conversationMessages,
+            input: conversationMessages.map(m => ({
+              role: m.role === 'system' ? 'developer' : m.role,
+              content: m.content,
+            })),
             stream: true,
-            temperature: 0.7,
-          }),
-        });
+            reasoning: {
+              effort: 'medium',
+              summary: 'auto',
+            },
+          };
 
-        if (!streamResponse.ok || !streamResponse.body) {
-          // Fallback to non-streamed content
-          if (checkMessage.content) {
-            const textData = { type: 'text', content: checkMessage.content };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
-          }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-          return;
-        }
+          const streamResponse = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(responsesBody),
+          });
 
-        // Stream the response
-        const reader = streamResponse.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+          if (!streamResponse.ok || !streamResponse.body) {
+            // Fallback to Chat Completions
+            const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: conversationMessages,
+                stream: true,
+              }),
+            });
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+            if (fallbackResponse.ok && fallbackResponse.body) {
+              const reader = fallbackResponse.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
-                  const textData = { type: 'text', content: delta };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+                    try {
+                      const parsed = JSON.parse(data);
+                      const delta = parsed.choices?.[0]?.delta?.content;
+                      if (delta) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta })}\n\n`));
+                      }
+                    } catch (e) { }
+                  }
                 }
-              } catch (e) { }
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+            return;
+          }
+
+          // Stream Responses API (handles reasoning summaries)
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let isThinking = false;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+
+                  // Handle reasoning summary events
+                  if (parsed.type === 'response.reasoning_summary_text.added') {
+                    isThinking = true;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
+                  }
+                  else if (parsed.type === 'response.reasoning_summary_text.delta') {
+                    const delta = parsed.delta;
+                    if (delta) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: delta })}\n\n`));
+                    }
+                  }
+                  else if (parsed.type === 'response.reasoning_summary_text.done') {
+                    isThinking = false;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
+                  }
+                  // Handle text output
+                  else if (parsed.type === 'response.output_text.delta') {
+                    const delta = parsed.delta;
+                    if (delta) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta })}\n\n`));
+                    }
+                  }
+                  // Legacy format
+                  else if (parsed.choices?.[0]?.delta?.content) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: parsed.choices[0].delta.content })}\n\n`));
+                  }
+                } catch (e) { }
+              }
+            }
+          }
+        } else {
+          // Use Chat Completions API for older models
+          const streamResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages: conversationMessages,
+              stream: true,
+              temperature: 0.7,
+            }),
+          });
+
+          if (!streamResponse.ok || !streamResponse.body) {
+            // Fallback to non-streamed content
+            if (checkMessage.content) {
+              const textData = { type: 'text', content: checkMessage.content };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+            return;
+          }
+
+          // Stream the response
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) {
+                    const textData = { type: 'text', content: delta };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+                  }
+                } catch (e) { }
+              }
             }
           }
         }

@@ -1,0 +1,1 @@
+import{j as r}from"./jsx-runtime.CLpGMVip.js";import{i as t}from"./index.es.KJ0Zivlf.js";/* empty css                                  */import"./index.B9mnsnPE.js";import"./_commonjsHelpers.BosuxZz1.js";function s(o){return r.jsx(t,{...o})}export{s as Youtube};

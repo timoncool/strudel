@@ -1,0 +1,331 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/chat/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/bakery/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/blog/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/first-effects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/first-notes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/first-sounds/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/getting-started/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/pattern-effects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/recap/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/de/workshop/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/embed/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/examples/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/functions/intro/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/functions/value-modifiers/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/intro/gallery/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/intro/showcase/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/accumulation/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/advanced-integrations/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/code/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/colors/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/community/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/conditional-modifiers/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/csound/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/devicemotion/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/effects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/factories/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/getting-started/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/hydra/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/input-devices/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/input-output/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/metadata/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/mini-notation/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/mondo-notation/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/notes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/pwa/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/random-modifiers/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/samples/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/signals/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/sounds/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/stepwise/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/strudel-vs-tidal/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/synths/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/time-modifiers/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/tonal/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/visual-feedback/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/xen/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/learn/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/recipes/arpeggios/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/recipes/microrhythms/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/recipes/recipes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/recipes/rhythms/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/rss\\.xml/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/swatch/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/about/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/alignment/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/docs/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/internals/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/packages/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/patterns/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/project-start/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/repl/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/sounds/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/testing/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/technical-manual/vim/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/tutorial/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/udels/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/understand/cycles/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/understand/pitch/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/understand/voicings/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/first-effects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/first-notes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/first-sounds/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/getting-started/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/pattern-effects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/recap/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/workshop/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/$",
+			"dest": "_render"
+		}
+	]
+}

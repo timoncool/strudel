@@ -971,16 +971,41 @@ async function runAnthropicAgent(
   });
 }
 
+/**
+ * Truncate messages to avoid rate limits
+ * Keep last N messages, prioritizing recent context
+ */
+function truncateMessages(messages: any[], maxMessages: number = 10): any[] {
+  if (messages.length <= maxMessages) return messages;
+  // Keep first message (might have important context) and last N-1 messages
+  return [messages[0], ...messages.slice(-(maxMessages - 1))];
+}
+
+/**
+ * Truncate code to avoid token overflow
+ */
+function truncateCode(code: string, maxChars: number = 4000): string {
+  if (!code || code.length <= maxChars) return code;
+  return code.slice(0, maxChars) + '\n// ... (код сокращён для экономии токенов)';
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { messages, apiKey, provider, model, currentCode, selectedCode } = body;
+    let { messages, apiKey, provider, model, currentCode, selectedCode } = body;
 
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'API ключ не указан' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Truncate to avoid rate limits
+    messages = truncateMessages(messages, 10);
+    currentCode = truncateCode(currentCode || '', 4000);
+    if (selectedCode) {
+      selectedCode = truncateCode(selectedCode, 2000);
     }
 
     let stream: ReadableStream;

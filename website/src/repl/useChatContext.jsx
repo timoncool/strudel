@@ -241,19 +241,45 @@ export function useChatContext(replContext) {
 
       abortControllerRef.current = new AbortController();
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: apiMessages,
-          apiKey: aiApiKey,
-          provider: aiProvider,
-          model: aiModel,
-          currentCode,
-          selectedCode, // Send selected code if any
-        }),
-        signal: abortControllerRef.current.signal,
-      });
+      // Retry logic with exponential backoff for rate limits
+      let response;
+      let retryCount = 0;
+      const maxRetries = 3;
+      const baseDelay = 2000; // 2 seconds
+
+      while (retryCount <= maxRetries) {
+        response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: apiMessages,
+            apiKey: aiApiKey,
+            provider: aiProvider,
+            model: aiModel,
+            currentCode,
+            selectedCode, // Send selected code if any
+          }),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (response.ok) break;
+
+        const errData = await response.json().catch(() => ({}));
+        const errorStr = errData.error || JSON.stringify(errData) || '';
+
+        // Check for rate limit error
+        if (response.status === 429 || errorStr.includes('rate_limit') || errorStr.includes('rate limit')) {
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1); // 2s, 4s, 8s
+            setLastAction(`⏳ Rate limit, повтор через ${delay / 1000}с... (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        }
+
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

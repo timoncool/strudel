@@ -41,7 +41,7 @@ function SettingsPanel({ onClose }) {
   const settings = useSettings();
   const [apiKey, setApiKey] = useState(settings.aiApiKey || '');
   const [provider, setProvider] = useState(settings.aiProvider || 'openai');
-  const [model, setModel] = useState(settings.aiModel || 'gpt-4o-mini');
+  const [model, setModel] = useState(settings.aiModel || 'gpt-5.1');
 
   const handleSave = () => {
     setAiApiKey(apiKey);

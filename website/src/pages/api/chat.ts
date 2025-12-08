@@ -1,207 +1,283 @@
 /**
  * Bulka Music AI Agent - Chat API Endpoint
  *
- * This endpoint handles chat requests and streams responses using Vercel AI SDK.
- * It supports tool calling for interacting with the music editor.
+ * Full RAG implementation using MD documentation files.
+ * API key is provided by client (stored in localStorage).
  */
 
 import type { APIRoute } from 'astro';
-import { streamText, tool } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { z } from 'zod';
-import { SYSTEM_PROMPT } from '../../repl/ai-agent/system-prompt';
-import { searchKnowledge, formatKnowledgeForContext, KNOWLEDGE_BASE } from '../../repl/ai-agent/knowledge';
-import { SOUND_CATEGORIES, DRUM_MACHINES } from '../../repl/ai-agent/tools';
+import fs from 'fs/promises';
+import path from 'path';
 
-// Disable prerendering for this API route
 export const prerender = false;
 
-/**
- * Get the AI model based on environment configuration
- */
-function getModel() {
-  const provider = import.meta.env.AI_PROVIDER || 'openai';
-  const modelName = import.meta.env.AI_MODEL || 'gpt-4o-mini';
+// Path to documentation
+const DOCS_PATH = path.join(process.cwd(), '..', 'docs_md');
 
-  if (provider === 'anthropic') {
-    const anthropic = createAnthropic({
-      apiKey: import.meta.env.ANTHROPIC_API_KEY,
-    });
-    return anthropic(modelName);
+/**
+ * Load and search MD files for relevant content
+ */
+async function searchDocumentation(query: string, maxResults: number = 5): Promise<string[]> {
+  const results: { file: string; content: string; score: number }[] = [];
+  const queryLower = query.toLowerCase();
+  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+
+  // Search in Russian docs first, then English
+  const searchPaths = [
+    path.join(DOCS_PATH, 'ru'),
+    path.join(DOCS_PATH, 'en'),
+  ];
+
+  for (const searchPath of searchPaths) {
+    try {
+      await searchDirectory(searchPath, queryWords, queryLower, results);
+    } catch (e) {
+      console.error(`Error searching ${searchPath}:`, e);
+    }
   }
 
-  // Default to OpenAI
-  const openai = createOpenAI({
-    apiKey: import.meta.env.OPENAI_API_KEY,
-    // Support for alternative OpenAI-compatible APIs
-    baseURL: import.meta.env.OPENAI_BASE_URL || undefined,
-  });
-  return openai(modelName);
+  // Sort by score and return top results
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, maxResults).map(r => r.content);
+}
+
+async function searchDirectory(
+  dir: string,
+  queryWords: string[],
+  queryLower: string,
+  results: { file: string; content: string; score: number }[]
+): Promise<void> {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        await searchDirectory(fullPath, queryWords, queryLower, results);
+      } else if (entry.name.endsWith('.md')) {
+        try {
+          const content = await fs.readFile(fullPath, 'utf-8');
+          const contentLower = content.toLowerCase();
+
+          // Calculate relevance score
+          let score = 0;
+
+          // Exact query match
+          if (contentLower.includes(queryLower)) {
+            score += 10;
+          }
+
+          // Word matches
+          for (const word of queryWords) {
+            const matches = (contentLower.match(new RegExp(word, 'g')) || []).length;
+            score += Math.min(matches, 10);
+          }
+
+          // Boost for key documentation files
+          if (entry.name.includes('mini-notation')) score += 15;
+          if (entry.name.includes('effects')) score += 10;
+          if (entry.name.includes('sounds') || entry.name.includes('zvuki')) score += 10;
+          if (entry.name.includes('samples')) score += 10;
+          if (entry.name.includes('synth')) score += 8;
+          if (entry.name.includes('drum')) score += 8;
+
+          if (score > 0) {
+            // Extract relevant section (limit to ~2000 chars)
+            const relevantContent = extractRelevantSection(content, queryWords, 2000);
+            results.push({
+              file: fullPath,
+              content: `## ${entry.name}\n${relevantContent}`,
+              score,
+            });
+          }
+        } catch (e) {
+          // Skip unreadable files
+        }
+      }
+    }
+  } catch (e) {
+    // Directory not found or not readable
+  }
+}
+
+function extractRelevantSection(content: string, queryWords: string[], maxLength: number): string {
+  const lines = content.split('\n');
+  const contentLower = content.toLowerCase();
+
+  // Find the most relevant section
+  let bestStart = 0;
+  let bestScore = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLower = lines[i].toLowerCase();
+    let score = 0;
+
+    for (const word of queryWords) {
+      if (lineLower.includes(word)) {
+        score += 5;
+      }
+    }
+
+    // Boost headers
+    if (lines[i].startsWith('#')) {
+      score += 3;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestStart = i;
+    }
+  }
+
+  // Extract section around best match
+  const startLine = Math.max(0, bestStart - 5);
+  const section = lines.slice(startLine);
+
+  let result = '';
+  for (const line of section) {
+    if (result.length + line.length > maxLength) break;
+    result += line + '\n';
+  }
+
+  return result.trim();
 }
 
 /**
- * Define tools for the AI agent
- * Note: Actual execution happens on the client side
- * These tools return instructions for the client to execute
+ * System prompt for the agent
  */
-const agentTools = {
-  // Search documentation
-  searchDocs: tool({
-    description: 'Поиск по документации Strudel. Используй чтобы найти информацию о функциях, синтаксисе, звуках, эффектах.',
-    parameters: z.object({
-      query: z.string().describe('Поисковый запрос'),
+const SYSTEM_PROMPT = `Ты - Bulka AI, музыкальный ассистент для live coding музыки на платформе Bulka/Strudel.
+
+## Возможности:
+- Помогать писать код на Strudel (мини-нотация + JavaScript)
+- Объяснять синтаксис и функции
+- Рекомендовать звуки и эффекты
+- Исправлять ошибки в коде
+
+## Правила:
+1. Отвечай на русском
+2. Давай конкретные примеры кода
+3. Используй только документированные функции
+4. Объясняй что делает код
+
+## Контекст из документации:
+`;
+
+/**
+ * Call OpenAI API
+ */
+async function callOpenAI(
+  apiKey: string,
+  model: string,
+  messages: any[],
+  systemPrompt: string
+): Promise<Response> {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
+      temperature: 0.7,
     }),
-    execute: async ({ query }) => {
-      const results = searchKnowledge(query, 3);
-      if (results.length === 0) {
-        return {
-          found: false,
-          message: 'Ничего не найдено по запросу: ' + query,
-        };
-      }
-      return {
-        found: true,
-        results: results.map(r => ({
-          title: r.title,
-          content: r.content,
-        })),
-        formatted: formatKnowledgeForContext(results),
-      };
-    },
-  }),
+  });
 
-  // Get sounds list
-  getSoundsList: tool({
-    description: 'Получить список доступных звуков и инструментов.',
-    parameters: z.object({
-      category: z.enum(['drums', 'synths', 'bass', 'effects', 'all']).optional().default('all'),
+  return response;
+}
+
+/**
+ * Call Anthropic API
+ */
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  messages: any[],
+  systemPrompt: string
+): Promise<Response> {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages,
+      stream: true,
     }),
-    execute: async ({ category }) => {
-      if (category === 'all') {
-        return SOUND_CATEGORIES;
-      }
-      return SOUND_CATEGORIES[category as keyof typeof SOUND_CATEGORIES] || {};
-    },
-  }),
+  });
 
-  // Get drum machines list
-  getDrumMachines: tool({
-    description: 'Получить список доступных драм-машин.',
-    parameters: z.object({}),
-    execute: async () => {
-      return {
-        machines: DRUM_MACHINES,
-        usage: 's("bd sd hh").bank("RolandTR808")',
-      };
-    },
-  }),
-
-  // Client-side tools - return action instructions
-  getCurrentCode: tool({
-    description: 'Получить текущий код из редактора.',
-    parameters: z.object({}),
-    execute: async () => {
-      // This will be handled by the client
-      return { action: 'getCurrentCode' };
-    },
-  }),
-
-  setEditorCode: tool({
-    description: 'Установить код в редактор (заменяет весь код).',
-    parameters: z.object({
-      code: z.string().describe('Код для установки'),
-    }),
-    execute: async ({ code }) => {
-      return { action: 'setEditorCode', code };
-    },
-  }),
-
-  appendCode: tool({
-    description: 'Добавить код в конец редактора.',
-    parameters: z.object({
-      code: z.string().describe('Код для добавления'),
-    }),
-    execute: async ({ code }) => {
-      return { action: 'appendCode', code };
-    },
-  }),
-
-  playMusic: tool({
-    description: 'Запустить воспроизведение музыки.',
-    parameters: z.object({}),
-    execute: async () => {
-      return { action: 'playMusic' };
-    },
-  }),
-
-  stopMusic: tool({
-    description: 'Остановить воспроизведение.',
-    parameters: z.object({}),
-    execute: async () => {
-      return { action: 'stopMusic' };
-    },
-  }),
-
-  togglePlayback: tool({
-    description: 'Переключить воспроизведение.',
-    parameters: z.object({}),
-    execute: async () => {
-      return { action: 'togglePlayback' };
-    },
-  }),
-};
+  return response;
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { messages, editorContext } = body;
+    const { messages, apiKey, provider, model, currentCode } = body;
 
-    // Build context with current editor state if provided
-    let contextAddition = '';
-    if (editorContext?.currentCode) {
-      contextAddition = `\n\n## Текущий код в редакторе:\n\`\`\`\n${editorContext.currentCode}\n\`\`\``;
-    }
-    if (editorContext?.isPlaying !== undefined) {
-      contextAddition += `\n\nСтатус воспроизведения: ${editorContext.isPlaying ? 'играет' : 'остановлено'}`;
-    }
-
-    const model = getModel();
-
-    const result = streamText({
-      model,
-      system: SYSTEM_PROMPT + contextAddition,
-      messages,
-      tools: agentTools,
-      maxSteps: 5, // Allow multi-step tool usage
-      temperature: 0.7,
-      onStepFinish: ({ text, toolCalls, toolResults }) => {
-        // Log for debugging (optional)
-        if (toolCalls && toolCalls.length > 0) {
-          console.log('[AI Agent] Tool calls:', toolCalls.map(t => t.toolName));
-        }
-      },
-    });
-
-    // Return streaming response
-    return result.toDataStreamResponse();
-
-  } catch (error) {
-    console.error('[AI Agent] Error:', error);
-
-    // Check for missing API key
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    if (errorMessage.includes('API key') || errorMessage.includes('apiKey')) {
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({
-          error: 'API ключ не настроен. Добавьте OPENAI_API_KEY или ANTHROPIC_API_KEY в переменные окружения.',
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'API ключ не указан. Добавьте его в настройках чата.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    // Get last user message for RAG search
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    const query = lastUserMessage?.content || '';
+
+    // Search documentation
+    const docs = await searchDocumentation(query, 5);
+    const docsContext = docs.join('\n\n---\n\n');
+
+    // Build system prompt with context
+    let fullSystemPrompt = SYSTEM_PROMPT + docsContext;
+
+    if (currentCode) {
+      fullSystemPrompt += `\n\n## Текущий код в редакторе:\n\`\`\`\n${currentCode}\n\`\`\``;
+    }
+
+    // Call appropriate API
+    let response: Response;
+
+    if (provider === 'anthropic') {
+      response = await callAnthropic(apiKey, model || 'claude-3-5-sonnet-20241022', messages, fullSystemPrompt);
+    } else {
+      response = await callOpenAI(apiKey, model || 'gpt-4o-mini', messages, fullSystemPrompt);
+    }
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('API error:', error);
+      return new Response(
+        JSON.stringify({ error: `Ошибка API: ${response.status}` }),
+        { status: response.status, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Stream the response
+    return new Response(response.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+
+  } catch (error) {
+    console.error('Chat API error:', error);
     return new Response(
-      JSON.stringify({ error: 'Ошибка AI агента: ' + errorMessage }),
+      JSON.stringify({ error: 'Внутренняя ошибка сервера' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

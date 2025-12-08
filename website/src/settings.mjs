@@ -17,9 +17,18 @@ export const soundFilterType = {
   ALL: 'all',
 };
 
+export const aiProviders = {
+  openai: 'openai',
+  anthropic: 'anthropic',
+};
+
 export const defaultSettings = {
   activeFooter: 'intro',
   keybindings: 'codemirror',
+  // AI Agent settings
+  aiApiKey: '',
+  aiProvider: aiProviders.openai,
+  aiModel: 'gpt-4o-mini',
   isBracketMatchingEnabled: true,
   isBracketClosingEnabled: true,
   isLineNumbersDisplayed: true,
@@ -144,3 +153,8 @@ export const fontFamily = patternSetting('fontFamily');
 export const fontSize = patternSetting('fontSize');
 
 export const settingPatterns = { theme, fontFamily, fontSize };
+
+// AI Agent settings
+export const setAiApiKey = (key) => settingsMap.setKey('aiApiKey', key);
+export const setAiProvider = (provider) => settingsMap.setKey('aiProvider', provider);
+export const setAiModel = (model) => settingsMap.setKey('aiModel', model);

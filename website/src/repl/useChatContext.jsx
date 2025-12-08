@@ -1,19 +1,12 @@
 /**
- * useChatContext - Hook for managing AI chat state and interactions
+ * useChatContext - Hook for managing AI chat state
  *
- * This hook provides:
- * - Message history management
- * - Streaming response handling
- * - Tool execution bridge to the editor
- * - Integration with useReplContext for editor control
+ * Uses server-side RAG for documentation search.
+ * API key stored in localStorage and sent with each request.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-
-// Message types
-const ROLE_USER = 'user';
-const ROLE_ASSISTANT = 'assistant';
-const ROLE_TOOL = 'tool';
+import { useState, useCallback, useRef } from 'react';
+import { useSettings } from '../settings.mjs';
 
 /**
  * Generate unique message ID
@@ -23,38 +16,73 @@ function generateId() {
 }
 
 /**
- * Parse streaming response data
+ * Parse SSE stream from OpenAI
  */
-function parseStreamData(line) {
-  if (!line.startsWith('0:') && !line.startsWith('2:') && !line.startsWith('9:')) {
-    return null;
-  }
+async function* parseOpenAIStream(reader) {
+  const decoder = new TextDecoder();
+  let buffer = '';
 
-  try {
-    // Remove prefix and parse JSON
-    const prefix = line.substring(0, 2);
-    const data = line.substring(2);
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-    if (prefix === '0:') {
-      // Text chunk
-      return { type: 'text', content: JSON.parse(data) };
-    } else if (prefix === '2:') {
-      // Tool call
-      return { type: 'tool_call', data: JSON.parse(data) };
-    } else if (prefix === '9:') {
-      // Tool result
-      return { type: 'tool_result', data: JSON.parse(data) };
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) yield content;
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
     }
-  } catch (e) {
-    // Ignore parse errors
   }
-  return null;
+}
+
+/**
+ * Parse SSE stream from Anthropic
+ */
+async function* parseAnthropicStream(reader) {
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'content_block_delta') {
+            const content = parsed.delta?.text;
+            if (content) yield content;
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  }
 }
 
 /**
  * Main chat hook
  */
 export function useChatContext(replContext) {
+  const settings = useSettings();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,78 +90,17 @@ export function useChatContext(replContext) {
   const abortControllerRef = useRef(null);
 
   /**
-   * Execute tool actions from AI response
-   */
-  const executeToolAction = useCallback((action) => {
-    if (!replContext?.editorRef?.current) {
-      console.warn('[Chat] Editor not available for tool action:', action);
-      return { success: false, error: 'Editor not available' };
-    }
-
-    const editor = replContext.editorRef.current;
-
-    try {
-      switch (action.action) {
-        case 'getCurrentCode':
-          return {
-            success: true,
-            result: editor.code || '',
-          };
-
-        case 'setEditorCode':
-          editor.setCode(action.code);
-          return {
-            success: true,
-            result: 'Code set successfully',
-          };
-
-        case 'appendCode':
-          editor.appendCode(action.code);
-          return {
-            success: true,
-            result: 'Code appended successfully',
-          };
-
-        case 'playMusic':
-          editor.evaluate();
-          return {
-            success: true,
-            result: 'Music started',
-          };
-
-        case 'stopMusic':
-          editor.stop();
-          return {
-            success: true,
-            result: 'Music stopped',
-          };
-
-        case 'togglePlayback':
-          editor.toggle();
-          return {
-            success: true,
-            result: 'Playback toggled',
-          };
-
-        default:
-          return {
-            success: false,
-            error: `Unknown action: ${action.action}`,
-          };
-      }
-    } catch (err) {
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
-  }, [replContext]);
-
-  /**
-   * Send message to AI agent
+   * Send message to AI
    */
   const sendMessage = useCallback(async (content) => {
     if (!content.trim() || isLoading) return;
+
+    const { aiApiKey, aiProvider, aiModel } = settings;
+
+    if (!aiApiKey) {
+      setError('API ключ не установлен. Откройте настройки и добавьте ключ.');
+      return;
+    }
 
     setError(null);
     setIsLoading(true);
@@ -141,31 +108,22 @@ export function useChatContext(replContext) {
     // Add user message
     const userMessage = {
       id: generateId(),
-      role: ROLE_USER,
+      role: 'user',
       content: content.trim(),
-      timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-
-    // Create assistant message placeholder
     const assistantMessage = {
       id: generateId(),
-      role: ROLE_ASSISTANT,
+      role: 'assistant',
       content: '',
-      timestamp: Date.now(),
-      toolCalls: [],
     };
 
-    setMessages(prev => [...prev, assistantMessage]);
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    setInput('');
 
     try {
-      // Prepare context
-      const editorContext = {
-        currentCode: replContext?.editorRef?.current?.code || '',
-        isPlaying: replContext?.started || false,
-      };
+      // Get current code from editor
+      const currentCode = replContext?.editorRef?.current?.code || '';
 
       // Prepare messages for API
       const apiMessages = [...messages, userMessage].map(m => ({
@@ -173,138 +131,79 @@ export function useChatContext(replContext) {
         content: m.content,
       }));
 
-      // Create abort controller
       abortControllerRef.current = new AbortController();
 
-      // Make streaming request
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: apiMessages,
-          editorContext,
+          apiKey: aiApiKey,
+          provider: aiProvider,
+          model: aiModel,
+          currentCode,
         }),
         signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${response.status}`);
       }
 
-      // Process streaming response
+      // Parse streaming response
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const parser = aiProvider === 'anthropic'
+        ? parseAnthropicStream(reader)
+        : parseOpenAIStream(reader);
+
       let fullContent = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-
-          const parsed = parseStreamData(line);
-          if (!parsed) continue;
-
-          if (parsed.type === 'text') {
-            fullContent += parsed.content;
-            setMessages(prev => {
-              const updated = [...prev];
-              const lastIdx = updated.length - 1;
-              if (updated[lastIdx]?.role === ROLE_ASSISTANT) {
-                updated[lastIdx] = {
-                  ...updated[lastIdx],
-                  content: fullContent,
-                };
-              }
-              return updated;
-            });
-          } else if (parsed.type === 'tool_call') {
-            // Process tool calls
-            const toolCalls = parsed.data;
-            if (Array.isArray(toolCalls)) {
-              for (const toolCall of toolCalls) {
-                // Execute client-side actions
-                if (toolCall.result?.action) {
-                  const result = executeToolAction(toolCall.result);
-                  console.log('[Chat] Tool executed:', toolCall.toolName, result);
-                }
-              }
-
-              setMessages(prev => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (updated[lastIdx]?.role === ROLE_ASSISTANT) {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    toolCalls: [...(updated[lastIdx].toolCalls || []), ...toolCalls],
-                  };
-                }
-                return updated;
-              });
-            }
+      for await (const chunk of parser) {
+        fullContent += chunk;
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (updated[lastIdx]?.role === 'assistant') {
+            updated[lastIdx] = { ...updated[lastIdx], content: fullContent };
           }
-        }
+          return updated;
+        });
       }
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.log('[Chat] Request aborted');
+        console.log('[Chat] Aborted');
       } else {
         console.error('[Chat] Error:', err);
         setError(err.message);
-        // Remove empty assistant message on error
-        setMessages(prev => prev.filter(m => m.content || m.toolCalls?.length > 0));
+        // Remove empty assistant message
+        setMessages(prev => prev.filter(m => m.content));
       }
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, isLoading, replContext, executeToolAction]);
+  }, [messages, isLoading, settings, replContext]);
 
-  /**
-   * Stop current request
-   */
   const stop = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    abortControllerRef.current?.abort();
   }, []);
 
-  /**
-   * Clear chat history
-   */
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
   }, []);
 
-  /**
-   * Handle input change
-   */
   const handleInputChange = useCallback((e) => {
     setInput(e.target.value);
   }, []);
 
-  /**
-   * Handle form submit
-   */
   const handleSubmit = useCallback((e) => {
     e?.preventDefault();
     sendMessage(input);
   }, [input, sendMessage]);
 
-  /**
-   * Handle key press (Enter to send)
-   */
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -313,22 +212,21 @@ export function useChatContext(replContext) {
   }, [input, sendMessage]);
 
   return {
-    // State
     messages,
     input,
     isLoading,
     error,
-
-    // Actions
     sendMessage,
     stop,
     clearMessages,
     setInput,
-
-    // Event handlers
     handleInputChange,
     handleSubmit,
     handleKeyDown,
+    // Settings for UI
+    hasApiKey: !!settings.aiApiKey,
+    provider: settings.aiProvider,
+    model: settings.aiModel,
   };
 }
 

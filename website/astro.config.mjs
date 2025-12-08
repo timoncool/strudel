@@ -60,7 +60,7 @@ const options = {
 
 // https://astro.build/config
 export default defineConfig({
-  output: 'server', // Enable SSR for API routes
+  output: 'server',
   adapter: node({
     mode: 'standalone',
   }),

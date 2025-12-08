@@ -3,5 +3,5 @@
   "framework": "astro",
   "installCommand": "pnpm install",
   "buildCommand": "cd website && pnpm run build",
-  "outputDirectory": "website/dist"
+  "outputDirectory": "website/.vercel/output"
 }

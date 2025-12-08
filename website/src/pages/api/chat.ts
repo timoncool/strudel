@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 export const prerender = false;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DOCS_PATH = path.resolve(__dirname, '../../../docs_md');
+const DOCS_PATH = path.resolve(__dirname, '../../../../docs_md');
 
 /**
  * Tool definitions for the agent

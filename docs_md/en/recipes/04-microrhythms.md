@@ -11,7 +11,15 @@ Inspired by this [Mini-Lecture on Microrhythm Notation](https://www.youtube.com/
 
 The timestamps of the first rhythm are `0 1/5 1/2 2/3 1`. We could naively express this with a stack:
 
-<!-- Interactive example available in web version -->
+```javascript
+s("hh").struct(
+  stack(
+    "x", // 0
+    "~ x ~@3", // 1/5
+    "~ x", // 1/2
+    "~@2 x" // 2/3
+))
+```
 
 While this works, it has two problems:
 
@@ -27,32 +35,37 @@ In the video, the duration of a timestamp is calculated by subtracting it from t
 
 Using those, we can now express the rhythm much shorter:
 
-<!-- Interactive example available in web version -->
+```javascript
+s("hh").struct("x@6 x@9 x@5 x@10")
+```
 
 The problems of the first notation are now fixed: it is much shorter and the durations are correct.
 Still, this notation involved calculating the durations by hand, which could be automated:
 
-<!-- MINIREPL_START --> {
+```javascript
+Pattern.prototype.micro = function (...timestamps) {
+  const durations = timestamps.map((x, i, a) => {
     const next = i < a.length-1 ? a[i+1] : 1;
     return next - a[i]
   })
   return this.struct(timeCat(...durations.map(d => [d, 1]))).late(timestamps[0])
 }
-s('hh').micro(0, 1/5, 1/2, 2/3)`}
-/>
+s('hh').micro(0, 1/5, 1/2, 2/3)
+```
 
 This notation is even shorter and it allows directly filling in the timestamps!
 
 This is the second example of the video:
 
-<!-- MINIREPL_START --> {
+```javascript
+Pattern.prototype.micro = function (...timestamps) {
+  const durations = timestamps.map((x, i, a) => {
     const next = i < a.length-1 ? a[i+1] : 1;
     return next - a[i]
   })
   return this.struct(timeCat(...durations.map(d => [d, 1]))).late(timestamps[0])
 }
-s('hh').micro(0, 1/6, 2/5, 2/3, 3/4)`}
-/>
+s('hh').micro(0, 1/6, 2/5, 2/3, 3/4)
+```
 
 with bass: https://strudel.cc/?sTglgJJCPIeY
-

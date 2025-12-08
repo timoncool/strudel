@@ -12,11 +12,13 @@ Let's now look more closely at how these `param(eter) functions` work.
 
 A very powerful feature of tidal patterns is that each parameter can be controlled independently:
 
-<!-- MINIREPL_START -->")
+```javascript
+note("c a f e")
+.cutoff("<500 1000 2000 [4000 8000]>")
 .gain(.8)
 .s('sawtooth')
-.log()`}
-/>
+.log()
+```
 
 In this example, the parameters `note`, `cutoff`, `gain` and `s` are controlled independently by either patterns or plain values (numbers / text).
 After pressing play, we can observe the time and parameter values of each event (hap) in the output created by `.log()`.
@@ -25,19 +27,25 @@ After pressing play, we can observe the time and parameter values of each event 
 
 Patterns that are not wrapped inside a param function will contain unlabeled `plain values`:
 
-<!-- MINIREPL_START -->".log()`} />
+```javascript
+"<c e g>".log()
+```
 
 This will not generate any sound output, because Strudel could only guess which param is meant by these letters.
 
 Now compare that to the version wrapped in `note`:
 
-<!-- MINIREPL_START -->").log()`} />
+```javascript
+note("<c e g>").log()
+```
 
 Now it is clear that these letters are meant to be played as notes.
 Under the hood, the `note` function (as well as all other param functions)
 will wrap each plain value in an object. If the note function did not exist, we would need to write:
 
-<!-- Interactive example available in web version -->
+```javascript
+cat({note:'c'},{note:'e'},{note:'g'}).log()
+```
 
 This will have the same output, though it is rather unwieldy to read and write.
 
@@ -45,7 +53,9 @@ This will have the same output, though it is rather unwieldy to read and write.
 
 To avoid too much nesting, param functions can also be chained like this:
 
-<!-- Interactive example available in web version -->
+```javascript
+cat('c', 'e', 'g').note().log()
+```
 
 This is equivalent to `note(cat('c','e','g')).log()`.
 
@@ -55,7 +65,9 @@ You can use this with any function that declares a type (like `n`, `s`, `note`, 
 
 Patterns of plain values can be modified with any of the following operators:
 
-<!-- MINIREPL_START -->").log()`} />
+```javascript
+"50 60 70".add("<0 1 2>").log()
+```
 
 Here, the add function modifies the numbers on the left.
 Again, there is no output because these numbers have no meaning without a param.
@@ -66,15 +78,21 @@ To modify a parameter value, you can either:
 
 - Use the operator on the plain value pattern, inside the param function:
 
-  <!-- MINIREPL_START -->")).room(.1).log()`} />
+  ```javascript
+note("50 60 70".add("<0 1 2>")).room(.1).log()
+```
 
 - Similarly, use the operator on the plain value pattern and wrap it later:
 
-  <!-- MINIREPL_START -->").note().room(.1).log()`} />
+  ```javascript
+"50 60 70".add("<0 1 2>").note().room(.1).log()
+```
 
 - Specify which param should be modified inside the operator function:
 
-  <!-- MINIREPL_START -->")).log()`} />
+  ```javascript
+note("50 60 70").room(.1).add(note("<0 1 2>")).log()
+```
 
 Remember the execution of the chained functions goes from left to right.
 
@@ -84,63 +102,70 @@ This group of functions allows to modify the value of events.
 
 ## add
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.add" h={0} />
 
 ## sub
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.sub" h={0} />
 
 ## mul
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.mul" h={0} />
 
 ## div
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.div" h={0} />
 
 ## round
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.round" h={0} />
 
 ## floor
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.floor" h={0} />
 
 ## ceil
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.ceil" h={0} />
 
 ## range
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.range" h={0} />
 
 ## rangex
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.rangex" h={0} />
 
 ## range2
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.range2" h={0} />
 
 ## ratio
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern.ratio" h={0} />
 
 ## as
 
-<!-- API documentation available in web version -->
+<JsDoc name="as" h={0} />
 
 # Custom Parameters
 
 You can also create your own parameters:
 
-<!-- Interactive example available in web version -->
+```javascript
+let x = createParam('x')
+x(sine.range(0, 200))
+
+```
 
 Multiple params can also be created in a more consice way, using `createParams`:
 
-<!-- Interactive example available in web version -->
+```javascript
+let { x, y } = createParams('x', 'y');
+x(sine.range(0, 200)).y(cosine.range(0, 200));
+
+```
 
 Note that these params will not do anything until you give them meaning in your custom output!
 
 From modifying parameters we transition to the concept of [Signals](/learn/signals).
-

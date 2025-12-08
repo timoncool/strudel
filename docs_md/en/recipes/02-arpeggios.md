@@ -13,41 +13,49 @@ This page will teach you how to get started writing arpeggios using different te
 
 Start with a simple sequence of notes:
 
-<!-- Interactive example available in web version -->
+```javascript
+note("c a f e").piano().slow(2)
+```
 
 Now, let's play one per cycle:
 
-<!-- MINIREPL_START -->").piano().slow(2)`} />
+```javascript
+note("<c a f e>").piano().slow(2)
+```
 
 On top of that, put a copy of the sequence, offset in time and pitch:
 
-<!-- MINIREPL_START -->".off(1/8, add(7))
-  .note().piano().slow(2)`}
-/>
+```javascript
+"<c a f e>".off(1/8, add(7))
+  .note().piano().slow(2)
+```
 
 Add some structure to the original sequence:
 
-<!-- MINIREPL_START -->"
+```javascript
+"<c*2 a(3,8) f(3,8,2) e*2>"
   .off(1/8, add(7))
-  .note().piano().slow(2)`}
-/>
+  .note().piano().slow(2)
+```
 
 Reverse in one speaker:
 
-<!-- MINIREPL_START -->"
+```javascript
+"<c*2 a(3,8) f(3,8,2) e*2>"
   .off(1/8, add(7))
   .note().piano()
-  .jux(rev).slow(2)`}
-/>
+  .jux(rev).slow(2)
+```
 
 Let's add another layer:
 
-<!-- MINIREPL_START -->"
+```javascript
+"<c*2 a(3,8) f(3,8,2) e*2>"
   .off(1/8, add(7))
   .off(1/8, add(12))
   .note().piano()
-  .jux(rev).slow(2)`}
-/>
+  .jux(rev).slow(2)
+```
 
 - added slow(2) to approximate tidals cps
 - n was replaced with note, because using n does not work as note for samples
@@ -56,4 +64,3 @@ Let's add another layer:
 ## Arpeggios from chords
 
 TODO
-

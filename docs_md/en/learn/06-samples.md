@@ -3,6 +3,16 @@ title: Samples
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+samples({
+  'gtr': 'gtr/0001_cleanC.wav',
+  'moog': { 'g3': 'moog/005_Mighty%20Moog%20G3.wav' },
+}, 'github:tidalcycles/dirt-samples');
+note("g3 [bb3 c4] <g4 f4 eb4 f3>@2").s("gtr,moog").clip(1)
+  .gain(.5)
+```
+
 # Samples
 
 Samples are the most common way to make sound with tidal and strudel.
@@ -11,11 +21,30 @@ Music that is based on samples can be thought of as a collage of sound. [Read mo
 
 Strudel allows loading samples in the form of audio files of various formats (wav, mp3, ogg) from any publicly available URL.
 
+
+```javascript
+setcpm(60)
+samples({
+  'moog': {
+    'g2': 'moog/004_Mighty%20Moog%20G2.wav',
+    'g3': 'moog/005_Mighty%20Moog%20G3.wav',
+    'g4': 'moog/006_Mighty%20Moog%20G4.wav',
+  }}, 'github:tidalcycles/dirt-samples')
+
+note("g2!2 <bb2 c3>!2, <c4@3 [<eb4 bb3> g4 f4]>")
+.s('moog').clip(1)
+.gain(.5)
+```
+
 # Default Samples
 
 By default, strudel comes with a built-in "sample map", providing a solid base to play with.
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("bd sd [~ bd] sd,hh*16, misc")
+```
+
 
 Here, we are using the `s` function to play back different default samples (`bd`, `sd`, `hh` and `misc`) to get a drum beat.
 
@@ -58,7 +87,12 @@ To see which sample names are available, open the `sounds` tab in the [REPL](htt
 
 You can also create custom aliases for existing sounds using the `soundAlias` function:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+soundAlias('RolandTR808_bd', 'kick')
+s("kick")
+```
+
 
 Note that only the sample maps (mapping names to URLs) are loaded initially, while the audio samples themselves are not loaded until they are actually played.
 This behaviour of loading things only when they are needed is also called `lazy loading`.
@@ -71,11 +105,19 @@ If we open the `sounds` tab and then `drum-machines`, we can see that the drum s
 
 We _could_ use them like this:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("RolandTR808_bd RolandTR808_sd,RolandTR808_hh*16")
+```
+
 
 ... but thats obviously a bit much to write. Using the `bank` function, we can shorten this to:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("bd sd,hh*16").bank("RolandTR808")
+```
+
 
 You could even pattern the bank to switch between different drum machines:
 
@@ -91,27 +133,53 @@ If we open the `sounds` tab again, followed by tab `drum machines`, there is als
 For example `RolandTR909_hh(4)` means there are 4 samples of a TR909 hihat available.
 By default, `s` will play the first sample, but we can select the other ones using `n`, starting from 0:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("bd sd,hh*16").bank("<RolandTR808 RolandTR909>")
+```
+
 
 Numbers that are too high will just wrap around to the beginning
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("hh*8").bank("RolandTR909").n("0 1 2 3")
+```
+
 
 Here, 0-3 will play the same sounds as 4-7, because `RolandTR909_hh` only has 4 sounds.
 
 Selecting sounds also works inside the mini notation, using "`:`" like this:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("hh*8").bank("RolandTR909").n("0 1 2 3 4 5 6 7")
+```
+
 
 # Loading Custom Samples
 
 You can load a non-standard sample map using the `samples` function.
 
+
+```javascript
+samples('shabda:bass:4,hihat:4,rimshot:2')
+
+$: n("0 1 2 3 0 1 2 3").s('bass')
+$: n("0 1*2 2 3*2").s('hihat').clip(1)
+$: n("~ 0 ~ 1 ~ 0 0 1").s('rimshot')
+```
+
 ## Loading samples from file URLs
 
 In this example we assign names `bassdrum`, `hihat` and `snaredrum` to specific audio files on a server:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("bd*4,hh:0 hh:1 hh:2 hh:3 hh:4 hh:5 hh:6 hh:7")
+.bank("RolandTR909")
+```
+
 
 You can freely choose any combination of letters for each sample name. It is even possible to override the default sounds.
 The names you pick will be made available in the `s` function.
@@ -132,7 +200,17 @@ As soon as you run the code, your chosen sample names will be listed in `sounds`
 The above way to load samples might be tedious to write out / copy paste each time you write a new pattern.
 To avoid that, you can simply pass a URL to a `strudel.json` file somewhere on the internet:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+samples({
+  bassdrum: 'bd/BT0AADA.wav',
+  hihat: 'hh27/000_hh27closedhh.wav',
+  snaredrum: ['sd/rytm-01-classic.wav', 'sd/rytm-00-hard.wav'],
+}, 'https://raw.githubusercontent.com/tidalcycles/Dirt-Samples/master/');
+
+s("bassdrum snaredrum:0 bassdrum snaredrum:1, hihat*16")
+```
+
 
 The file is expected to define a sample map using JSON, in the same format as described above.
 Additionally, the base path can be defined with the `_base` key.
@@ -172,11 +250,25 @@ npx --yes @strudel/sampler --json > strudel.json
 
 See other uses of strudel/sampler further below, under "From Disk via @strudel/sampler".
 
+
+```javascript
+samples('shabda/speech:the_drum,forever')
+samples('shabda/speech/fr-FR/m:magnifique')
+
+$: s("the_drum*2").chop(16).speed(rand.range(0.85,1.1))
+$: s("forever magnifique").slow(4).late(0.125)
+```
+
 ## Github Shortcut
 
 Because loading samples from github is common, there is a shortcut:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+samples('https://raw.githubusercontent.com/tidalcycles/Dirt-Samples/master/strudel.json')
+s("bd sd bd sd,hh*16")
+```
+
 
 The format is `samples('github:<user>/<repo>/<branch>')`. If you omit `branch` (like above), the `main` branch will be used.
 It assumes a `strudel.json` file to be present at the root of the repository:
@@ -254,12 +346,23 @@ Note that this notation for pitched sounds also works inside a `strudel.json` fi
 If you don't want to select samples by hand, there is also the wonderful tool called [shabda](https://shabda.ndre.gr/).
 With it, you can enter any sample name(s) to query from [freesound.org](https://freesound.org/). Example:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+samples('github:tidalcycles/dirt-samples')
+s("bd sd bd sd,hh*16")
+```
+
 
 You can also generate artificial voice samples with any text, in multiple languages.
 Note that the language code and the gender parameters are optional and default to `en-GB` and `f`
 
-<!-- Interactive example available in web version -->
+
+```javascript
+samples('http://localhost:5432/');
+
+n("<0 1 2>").s("swoop smash")
+```
+
 
 # Sampler Effects
 

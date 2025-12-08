@@ -69,4 +69,3 @@ These packages provide bindings for different ways to output strudel patterns:
 - [pnpm](https://pnpm.io/) for package management, workspaces and publishing
 - [lerna](https://lerna.js.org/) for bumping versions
 - see CONTRIBUTING.md for more info
-

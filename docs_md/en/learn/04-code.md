@@ -3,13 +3,28 @@ title: Coding syntax
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+const effectChain = register('effectChain', (pat) => pat
+    .s("sawtooth")
+    .cutoff(500)
+    //.delay(0.5)
+    .room(0.5)
+  )
+note("a3 c#4 e4 a4").effectChain()
+```
+
 # Coding Syntax
 
 Let's take a step back and understand how the syntax in Strudel works.
 
 Take a look at this simple example:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").s("piano")
+```
+
 
 - We have a word `note` which is followed by some brackets `()` with some words/letters/numbers inside, surrounded by quotes `"c a f e"`
 - Then we have a dot `.` followed by another similar piece of code `s("piano")`.
@@ -17,15 +32,31 @@ Take a look at this simple example:
 
 What happens if we try to 'break' this pattern in different ways?
 
-<!-- Interactive example available in web version -->
 
-<!-- Interactive example available in web version -->
+```javascript
+note(c a f e).s(piano)
+```
 
-<!-- Interactive example available in web version -->
+
+
+```javascript
+note("c a f e")s("piano")
+```
+
+
+
+```javascript
+note["c a f e"].s{"piano"}
+```
+
 
 Ok, none of these seem to work...
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("piano").note("c a f e")
+```
+
 
 This one does work, but now we only hear the first note...
 
@@ -48,7 +79,15 @@ You can think of this as being similar to chaining audio effects together using 
 
 Strudel makes heavy use of chained functions. Here is a more sophisticated example:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("a3 c#4 e4 a4")
+.s("sawtooth")
+.cutoff(500)
+//.delay(0.5)
+.room(0.5)
+```
+
 
 ## Write your own chained function
 

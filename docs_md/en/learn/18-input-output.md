@@ -3,15 +3,44 @@ title: MIDI, OSC & MQTT
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+s("bd sd").osc()
+```
+
 # MIDI, OSC and MQTT
 
 Normally, Strudel is used to pattern sound, using its own '[web audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)'-based synthesiser called [SuperDough](https://codeberg.org/uzu/strudel/src/branch/main/packages/superdough).
 
 It is also possible to pattern other things with Strudel, such as software and hardware synthesisers with MIDI, other software using Open Sound Control/OSC (including the [SuperDirt](https://github.com/musikinformatik/SuperDirt/) synthesiser commonly used with Strudel's sibling [TidalCycles](https://tidalcycles.org/)), or the MQTT 'internet of things' protocol.
 
+
+```javascript
+"hello world"
+    .mqtt(undefined, // имя пользователя (undefined для открытых/публичных серверов)
+          undefined, // пароль
+          '/strudel-pattern', // mqtt 'topic'
+          'wss://mqtt.eclipseprojects.io:443/mqtt', // адрес MQTT сервера
+          'mystrudel', // MQTT client id - генерируется случайно, если не указан
+          0 // задержка перед отправкой сообщений (0 = без задержки)
+         )
+```
+
 # MIDI
 
 Strudel supports MIDI without any additional software (thanks to [webmidi](https://npmjs.com/package/webmidi)), just by adding methods to your pattern:
+
+
+```javascript
+sound("sax(3,8)").speed("2 3")
+  .mqtt(undefined, // имя пользователя (undefined для открытых/публичных серверов)
+        undefined, // пароль
+        '/strudel-pattern', // mqtt 'topic'
+        'wss://mqtt.eclipseprojects.io:443/mqtt', // адрес MQTT сервера
+        'mystrudel', // MQTT client id - генерируется случайно, если не указан
+        0 // задержка перед отправкой сообщений (0 = без задержки)
+       )
+```
 
 ## midiin(inputName?)
 
@@ -35,7 +64,11 @@ e.g.
 
 The `.midi()` function accepts an options object with the following properties:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+$: chord("<C^7 A7 Dm7 G7>").voicing().midi('IAC Driver')
+```
+
 
 <details>
 <summary>Available Options</summary>
@@ -92,15 +125,29 @@ It supports the following commands:
 - `ccn` sets the cc number. Depends on your synths midi mapping
 - `ccv` sets the cc value. normalized from 0 to 1.
 
-<!-- Interactive example available in web version -->
 
-<!-- Interactive example available in web version -->
+```javascript
+$: note("d e c a f").midi('IAC Driver', { isController: true, midimap: 'default'})
+```
+
+
+
+```javascript
+$:stack(
+  midicmd("clock*48,<start stop>/2").midi('IAC Driver')
+)
+```
+
 
 In the above snippet, `ccn` is set to 74, which is the filter cutoff for many synths. `ccv` is controlled by a saw pattern.
 Having everything in one pattern, the `ccv` pattern will be aligned to the note pattern, because the structure comes from the left by default.
 But you can also control cc messages separately like this:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").control([74, sine.slow(4)]).midi()
+```
+
 
 Instead of setting `ccn` and `ccv` directly, you can also create mappings with `midimaps`:
 
@@ -131,7 +178,11 @@ The exact sound that each program number maps to depends on your MIDI device's c
 ysEx messages are device-specific commands that allow deeper control over synthesizer parameters.
 The value should be an array of numbers between 0-255 representing the SysEx data bytes.
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").ccn(74).ccv(sine.slow(4)).midi()
+```
+
 
 The exact format of SysEx messages depends on your MIDI device's specification.
 Consult your device's MIDI implementation guide for details on supported SysEx messages.
@@ -141,9 +192,22 @@ Consult your device's MIDI implementation guide for details on supported SysEx m
 `midibend` sets MIDI pitch bend (-1 - 1)
 `miditouch` sets MIDI key after touch (0-1)
 
-<!-- Interactive example available in web version -->
 
-<!-- Interactive example available in web version -->
+```javascript
+$: note("c a f e").midi()
+$: ccv(sine.segment(16).slow(4)).ccn(74).midi()
+```
+
+
+
+```javascript
+// Переключение между программами 0 и 1 каждый cycle
+progNum("<0 1>").midi()
+
+// Воспроизведение нот при изменении программ
+note("c3 e3 g3").progNum("<0 1 2>").midi()
+```
+
 
 # OSC/SuperDirt/StrudelDirt
 
@@ -171,7 +235,16 @@ Now you're all set!
 
 ...or test it here:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+// Отправка простого SysEx сообщения
+let id = 0x43; //Yamaha
+//let id = "0x00:0x20:0x32"; //Behringer ID может быть массивом чисел
+let data = "0x79:0x09:0x11:0x0A:0x00:0x00"; // Установить голос NSX-39 на "Aa"
+$: note("c a f e").sysex(id, data).midi();
+$: note("c a f e").sysexid(id).sysexdata(data).midi();
+```
+
 
 If you now hear sound, congratulations! If not, you can get help on the [#strudel channel in the TidalCycles discord](https://discord.com/invite/HGEdXmRkzT).
 
@@ -201,7 +274,11 @@ Strudel does not yet support receiving messages over MQTT, only sending them.
 
 The following example shows how to send a pattern to an MQTT broker:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").midibend(sine.slow(4).range(-0.4,0.4)).midi()
+```
+
 
 Other software can then receive the messages. For example using the [mosquitto](https://mosquitto.org/) commandline client tools:
 
@@ -218,7 +295,11 @@ Other software can then receive the messages. For example using the [mosquitto](
 
 Control patterns will be encoded as JSON, for example:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+note("c a f e").miditouch(sine.slow(4).range(0,1)).midi()
+```
+
 
 Will send messages like the following:
 

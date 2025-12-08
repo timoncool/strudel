@@ -35,4 +35,3 @@ Troubleshooting
 
 - If :w logs but evaluation doesn't apply, ensure Vim keybindings are active and try again. You can also use Ctrl+Enter as a fallback.
 - For :q / gc, ensure focus is inside the editor. If an error occurs, reload the page to reset editor state and try again.
-

@@ -3,10 +3,39 @@ title: Audio effects
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+note("[c eb g <f bb>](3,8,<0 1>)".sub(12))
+  .s("<sawtooth>/64")
+  .lpf(sine.range(300,2000).slow(16))
+  .lpa(0.005)
+  .lpd(perlin.range(.02,.2))
+  .lps(perlin.range(0,.5).slow(3))
+  .lpq(sine.range(2,10).slow(32))
+  .release(.5)
+  .lpenv(perlin.range(1,8).slow(2))
+  .ftype('24db')
+  .room(1)
+  .juxBy(.5,rev)
+  .sometimes(add(note(12)))
+  .stack(s("bd*2").bank('RolandTR909'))
+  .gain(.5).fast(2)
+```
+
 # Audio Effects
 
 Whether you're using a synth or a sample, you can apply any of the following built-in audio effects.
 As you might suspect, the effects can be chained together, and they accept a pattern string as their argument.
+
+
+```javascript
+n("<-4,0 5 2 1>*<2!3 4>")
+  .scale("<C F>/8:pentatonic")
+  .s("gm_electric_guitar_jazz")
+  .penv("<.5 0 7 -2>*2").vib("4:.1")
+  .phaser(2).delay(.25).room(.3)
+  .size(4).fast(1.5)
+```
 
 # Signal chain
 
@@ -52,6 +81,17 @@ The signal chain in Strudel is as follows:
   - The `duck` effect affects the volume of all signals in the orbit
   - The orbit is then sent to the mixer
 
+
+```javascript
+n(run("<4 8>/16")).jux(rev)
+.chord("<C^7 <Db^7 Fm7>>")
+.dict('ireal')
+.voicing().add(note("<0 1>/8"))
+.dec(.1).room(.2)
+.segment("<4 [2 8]>")
+.penv("<0 <2 -2>>").patt(.02).fast(2)
+```
+
 ## Orbits
 
 Orbits are the way in which outputs are handled in Strudel. They also prescribe which delay and reverb to associate with the dry signal.
@@ -61,7 +101,11 @@ to channels `2i` and `2i + 1`). You can then use routers like Blackhole 16 to re
 
 The default orbit is `1` and it is set with `orbit`. You may send a sound to multiple orbits via mininotation
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("white").orbit("2,3,4").gain(0.2)
+```
+
 
 but please be careful as this will create three copies of the sound behind the scenes, meaning that if they are mixed
 down to a single output, they will triple the volume. We've reduced the gain here to save your ears.
@@ -70,28 +114,55 @@ down to a single output, they will triple the volume. We've reduced the gain her
 patterns pointing to the same orbit, it can lead to unpredictable results. Compare, for example, this pretty pluck
 with a large reverb:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+$: s("triangle*4").decay(0.5).n(irand(12)).scale('C minor')
+  .room(1).roomsize(10)
+```
+
 
 versus the same pluck with a muted kick drum coming in and overwriting the `roomsize` value:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+$: s("triangle*4").decay(0.5).n(irand(12)).scale('C minor')
+  .room(1).roomsize(10)
+
+$: s("bd\*4").room(0.01).roomsize(0.01).postgain(0)
+```
+
 
 This is due to them sharing the same orbit: the default of `1`. It can be corrected simply by updating the orbits to be
 distinct:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+$: s("triangle*4").decay(0.5).n(irand(12)).scale('C minor')
+  .room(1).roomsize(10).orbit(2)
+
+$: s("bd\*4").room(0.01).roomsize(0.01).postgain(0)
+```
+
 
 ## Continuous changes
 
 As all of the above is triggered by a _sound occurring_, it is often the case that parameters may not be
 modified continuously in time. For example,
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("supersaw").lpf(tri.range(100, 5000).slow(2))
+```
+
 
 Will not produce a continually LFO'd low-pass filter due to the `tri` only being sampled every time the note hits
 (in this case the default of once per cycle). You can fake it by introducing more sound-generating events, e.g.:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("supersaw").seg(16).lpf(tri.range(100, 5000).slow(2))
+```
+
 
 Some parameters _do_ induce continuous variations in time, though:
 

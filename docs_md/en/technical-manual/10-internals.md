@@ -11,165 +11,165 @@ These functions are more low level, probably not needed by the live coder.
 
 ## withValue
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withValue" h={0} />
 
 ## appWhole
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#appWhole" h={0} />
 
 ## appBoth
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#appBoth" h={0} />
 
 ## appLeft
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#appLeft" h={0} />
 
 ## appRight
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#appRight" h={0} />
 
 ## bindWhole
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#bindWhole" h={0} />
 
 ## bind
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#bind" h={0} />
 
 ## join
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#join" h={0} />
 
 ## outerBind
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#outerBind" h={0} />
 
 ## outerJoin
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#outerJoin" h={0} />
 
 ## innerBind
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#innerBind" h={0} />
 
 ## innerJoin
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#innerJoin" h={0} />
 
 ## resetJoin
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#resetJoin" h={0} />
 
 ## restartJoin
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#restartJoin" h={0} />
 
 ## squeezeJoin
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#squeezeJoin" h={0} />
 
 ## squeezeBind
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#squeezeBind" h={0} />
 
 # Utility methods mainly for internal use
 
 ## queryArc
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#queryArc" h={0} />
 
 ## splitQueries
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#splitQueries" h={0} />
 
 ## withQuerySpan
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withQuerySpan" h={0} />
 
 ## withQuerySpanMaybe
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withQuerySpanMaybe" h={0} />
 
 ## withQueryTime
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withQueryTime" h={0} />
 
 ## withHapSpan
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withHapSpan" h={0} />
 
 ## withHapTime
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withHapTime" h={0} />
 
 ## withHaps
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withHaps" h={0} />
 
 ## withHap
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withHap" h={0} />
 
 ## setContext
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#setContext" h={0} />
 
 ## withContext
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#setContext" h={0} />
 
 ## stripContext
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#stripContext" h={0} />
 
 ## withLoc
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#withLoc" h={0} />
 
 ## filterHaps
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#filterHaps" h={0} />
 
 ## filterValues
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#filterValues" h={0} />
 
 ## removeUndefineds
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#filterValues" h={0} />
 
 ## onsetsOnly
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#onsetsOnly" h={0} />
 
 ## discreteOnly
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#discreteOnly" h={0} />
 
 ## defragmentHaps
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#defragmentHaps" h={0} />
 
 ## firstCycle
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#firstCycle" h={0} />
 
 ## firstCycleValues
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#firstCycleValues" h={0} />
 
 ## showFirstCycle
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#showFirstCycle" h={0} />
 
 ## sortHapsByPart
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#sortHapsByPart" h={0} />
 
 ## asNumber
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#sortHapsByPart" h={0} />
 
 # Operators
 
@@ -185,19 +185,19 @@ These functions are more low level, probably not needed by the live coder.
 
 ## onTrigger
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#onTrigger" h={0} />
 
 ## log
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#log" h={0} />
 
 ## logValues
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#logValues" h={0} />
 
 ## drawLine
 
-<!-- API documentation available in web version -->
+<JsDoc name="Pattern#drawLine" h={0} />
 
 ## collect
 
@@ -205,43 +205,43 @@ These functions are more low level, probably not needed by the live coder.
 
 ## groupHapsBy
 
-<!-- API documentation available in web version -->
+<JsDoc name="groupHapsBy" h={0} />
 
 ## pure
 
-<!-- API documentation available in web version -->
+<JsDoc name="pure" h={0} />
 
 ## reify
 
-<!-- API documentation available in web version -->
+<JsDoc name="reify" h={0} />
 
 ## slowcatPrime
 
-<!-- API documentation available in web version -->
+<JsDoc name="slowcatPrime" h={0} />
 
 ## isPattern
 
-<!-- API documentation available in web version -->
+<JsDoc name="isPattern" h={0} />
 
 ## register
 
-<!-- API documentation available in web version -->
+<JsDoc name="register" h={0} />
 
 ## toBipolar
 
-<!-- API documentation available in web version -->
+<JsDoc name="toBipolar" h={0} />
 
 ## fromBipolar
 
-<!-- API documentation available in web version -->
+<JsDoc name="fromBipolar" h={0} />
 
 ## compressSpan
 
-<!-- API documentation available in web version -->
+<JsDoc name="compressSpan" h={0} />
 
 ## focus
 
-<!-- API documentation available in web version -->
+<JsDoc name="focus" h={0} />
 
 ## focusSpan
 
@@ -256,4 +256,3 @@ set keep keepif add sub mul div mod pow band bor bxor blshift brshift lt gt lte 
 ```
 In Out Mix Squeeze SqueezeOut Trig Trigzero
 ```
-

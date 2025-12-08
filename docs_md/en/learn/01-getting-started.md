@@ -3,6 +3,37 @@ title: Getting Started
 layout: ../../layouts/MainLayout.astro
 ---
 
+
+```javascript
+samples({
+  bd: ['bd/BT0AADA.wav','bd/BT0AAD0.wav','bd/BT0A0DA.wav','bd/BT0A0D3.wav','bd/BT0A0D0.wav','bd/BT0A0A7.wav'],
+  sd: ['sd/rytm-01-classic.wav','sd/rytm-00-hard.wav'],
+  hh: ['hh27/000_hh27closedhh.wav','hh/000_hh3closedhh.wav'],
+}, 'github:tidalcycles/dirt-samples');
+stack(
+s("bd,[~ <sd!3 sd(3,4,2)>],hh*8") // барабаны
+.speed(perlin.range(.7,.9)) // случайная вариация скорости sample
+,"<a1 b1\*2 a1(3,8) e2>" // басовая линия
+.off(1/8,x=>x.add(12).degradeBy(.5)) // случайные октавные скачки
+.add(perlin.range(0,.5)) // случайная вариация высоты тона
+.superimpose(add(.05)) // добавить второй, слегка расстроенный голос
+.note() // обернуть в "note"
+.decay(.15).sustain(0) // сделать каждую ноту одинаковой длины
+.s('sawtooth') // форма волны
+.gain(.4) // уменьшить громкость
+.cutoff(sine.slow(7).range(300,5000)) // автоматизация cutoff
+,"<Am7!3 <Em7 E7b13 Em7 Ebm7b5>>".voicings('lefthand') // аккорды
+.superimpose(x=>x.add(.04)) // добавить второй, слегка расстроенный голос
+.add(perlin.range(0,.5)) // случайная вариация высоты тона
+.note() // обернуть в "note"
+.s('sawtooth') // форма волны
+.gain(.16) // уменьшить громкость
+.cutoff(500) // фиксированный cutoff
+.attack(1) // медленное появление
+)
+.slow(3/2)
+```
+
 # Welcome
 
 Welcome to the Strudel documentation pages!
@@ -24,7 +55,11 @@ Strudel however runs directly in your web browser, does not require any custom s
 The main place to actually make music with Strudel is the [Strudel REPL](https://strudel.cc/) ([what is a REPL?](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop)), but in these pages you will also encounter interactive "MiniREPLs" where you can listen to and edit Strudel patterns.
 Try clicking the play icon below:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+s("bd sd")
+```
+
 
 Then edit the text so it reads `s("bd sd cp hh")` and click the refresh icon.
 Congratulations, you have now live coded your first Strudel pattern!

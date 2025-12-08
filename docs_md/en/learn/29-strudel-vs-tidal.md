@@ -111,7 +111,13 @@ Also, samples are always loaded from a URL rather than from the disk, although [
 The Strudel REPL does not support [block based evaluation](https://codeberg.org/uzu/strudel/issues/34) yet.
 You can use labeled statements and `_` to mute:
 
-<!-- Interactive example available in web version -->
+
+```javascript
+$: n("[0 .. 8]*8/9").scale("C:minor:pentatonic")
+
+\_$: s("bd\*4").bank('RolandTR909')
+```
+
 
 ## Tempo
 

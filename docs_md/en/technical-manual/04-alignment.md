@@ -45,4 +45,3 @@ This makes way for other ways to align the pattern, and several are already defi
 We will save going deeper into the background, design and practicalities of these alignment functions for future publications. However in the next section, we take them as a case study for looking at the different design affordances offered by Haskell to Tidal, and JavaScript to Strudel.
 
 Ok, so how do Strudel and Tidal [compare](/learn/strudel-vs-tidal)?
-

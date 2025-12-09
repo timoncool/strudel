@@ -641,14 +641,9 @@ async function runOpenAIAgent(
           requestBody.tool_choice = 'auto';
         }
 
-        // Add temperature only for models that support it
+        // Add temperature only for models that support it (NOT for o-series and gpt-5)
         if (!noTemperatureSupport) {
           requestBody.temperature = 0.7;
-        }
-
-        // GPT-5 series: use reasoning_effort parameter for thinking
-        if (isGPT5Model) {
-          requestBody.reasoning_effort = 'medium'; // low, medium, high, or none
         }
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {

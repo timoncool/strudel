@@ -906,6 +906,8 @@ async function runAnthropicAgent(
 
         // For tool_use blocks, accumulate input JSON
         const toolInputBuffers: Map<number, string> = new Map();
+        // For thinking blocks, accumulate signature
+        const thinkingSignatures: Map<number, string> = new Map();
 
         while (true) {
           const { done, value } = await reader.read();
@@ -938,6 +940,7 @@ async function runAnthropicAgent(
                   isInThinkingBlock = true;
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
                   contentBlocks[currentBlockIndex] = { type: 'thinking', thinking: '' };
+                  thinkingSignatures.set(currentBlockIndex, '');
                 }
                 else if (block?.type === 'text') {
                   isInThinkingBlock = false;
@@ -966,6 +969,11 @@ async function runAnthropicAgent(
                   }
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: delta.thinking })}\n\n`));
                 }
+                // Signature delta (for thinking blocks)
+                else if (delta?.type === 'signature_delta' && delta?.signature) {
+                  const current = thinkingSignatures.get(idx) || '';
+                  thinkingSignatures.set(idx, current + delta.signature);
+                }
                 // Text delta
                 else if (delta?.type === 'text_delta' && delta?.text) {
                   if (contentBlocks[idx]) {
@@ -984,8 +992,12 @@ async function runAnthropicAgent(
               if (parsed.type === 'content_block_stop') {
                 const idx = parsed.index;
 
-                // End thinking block
+                // End thinking block - add signature
                 if (contentBlocks[idx]?.type === 'thinking') {
+                  const signature = thinkingSignatures.get(idx);
+                  if (signature) {
+                    contentBlocks[idx].signature = signature;
+                  }
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
                   isInThinkingBlock = false;
                 }

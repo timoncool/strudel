@@ -619,9 +619,10 @@ async function runOpenAIAgent(
       while (maxIterations > 0) {
         maxIterations--;
 
-        // Check if model is a reasoning model - they don't support temperature/tools
-        // o1, o3, o4 series are all reasoning models
-        const isReasoningModel = /^o[134](-|$)/.test(model);
+        // Check if model doesn't support temperature parameter
+        // ALL o-series (o1, o3, o4) and ALL gpt-5 series don't support temperature
+        // Only default value (1) is allowed for these models
+        const noTemperatureSupport = /^o[134](-|$)/.test(model) || model.startsWith('gpt-5');
 
         // Build request body conditionally
         const checkBody: any = {
@@ -630,10 +631,17 @@ async function runOpenAIAgent(
           stream: false,
         };
 
+        // o-series reasoning models don't support tools either
+        const isReasoningModel = /^o[134](-|$)/.test(model);
+
         // Add tools only for non-reasoning models
         if (!isReasoningModel) {
           checkBody.tools = TOOLS_OPENAI;
           checkBody.tool_choice = 'auto';
+        }
+
+        // Add temperature only for models that support it
+        if (!noTemperatureSupport) {
           checkBody.temperature = 0.7;
         }
 
@@ -729,14 +737,14 @@ async function runOpenAIAgent(
         }
 
         // No tool calls - stream the final text response
-        // Build streaming request body (no temperature for reasoning models)
+        // Build streaming request body (no temperature for gpt-5/o-series)
         const streamBody: any = {
           model,
           messages: conversationMessages,
           stream: true,
         };
 
-        if (!isReasoningModel) {
+        if (!noTemperatureSupport) {
           streamBody.temperature = 0.7;
         }
 
@@ -928,8 +936,8 @@ async function runAnthropicAgent(
         }
 
         // No tool use - stream the final text response with extended thinking
-        // Check if model supports thinking (claude-sonnet-4, claude-opus-4, etc.)
-        const supportsThinking = model.includes('sonnet-4') || model.includes('opus-4') || model.includes('claude-4');
+        // Check if model supports thinking (Claude 4+ models: opus-4, sonnet-4, haiku-4)
+        const supportsThinking = /claude-(opus|sonnet|haiku)-4/.test(model);
 
         const streamBody: any = {
           model,
@@ -953,10 +961,8 @@ async function runAnthropicAgent(
           'anthropic-version': '2023-06-01',
         };
 
-        // Add interleaved thinking beta header for Claude 4 models
-        if (supportsThinking) {
-          streamHeaders['anthropic-beta'] = 'interleaved-thinking-2025-05-14';
-        }
+        // Note: interleaved-thinking header is only for tool calling with thinking
+        // For basic extended thinking streaming, no special header needed
 
         const streamResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -1052,7 +1058,8 @@ async function runAnthropicAgent(
 }
 
 /**
- * Gemini agent loop with tool calling
+ * Gemini agent loop with tool calling and thinking support
+ * Uses streamGenerateContent for SSE streaming
  */
 async function runGeminiAgent(
   apiKey: string,
@@ -1086,6 +1093,9 @@ async function runGeminiAgent(
     })),
   }];
 
+  // Check if model supports thinking (gemini-2.5, gemini-3)
+  const supportsThinking = model.includes('2.5') || model.includes('3.0') || model.includes('deep-think');
+
   return new ReadableStream({
     async start(controller) {
       let conversationContents = [...geminiContents];
@@ -1094,31 +1104,43 @@ async function runGeminiAgent(
       while (maxIterations > 0) {
         maxIterations--;
 
-        // Call Gemini API
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        // First check for tool calls (non-streaming)
+        const checkUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-        const response = await fetch(geminiUrl, {
+        // Build generation config
+        const generationConfig: any = {
+          maxOutputTokens: 8192,
+        };
+
+        // Add thinking config for supported models
+        if (supportsThinking) {
+          generationConfig.thinkingConfig = {
+            includeThoughts: true,
+            thinkingBudget: -1, // Dynamic thinking
+          };
+        } else {
+          generationConfig.temperature = 0.7;
+        }
+
+        const checkResponse = await fetch(checkUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: conversationContents,
             systemInstruction: { parts: [{ text: systemPrompt }] },
             tools: geminiTools,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 8192,
-            },
+            generationConfig,
           }),
         });
 
-        if (!response.ok) {
-          const err = await response.text();
+        if (!checkResponse.ok) {
+          const err = await checkResponse.text();
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err })}\n\n`));
           controller.close();
           return;
         }
 
-        const data = await response.json();
+        const data = await checkResponse.json();
         const candidate = data.candidates?.[0];
         const content = candidate?.content;
 
@@ -1198,13 +1220,88 @@ async function runGeminiAgent(
           continue;
         }
 
-        // No function calls - stream text response
-        const textParts = content.parts?.filter((p: any) => p.text);
-        for (const part of textParts || []) {
-          if (part.text) {
-            const textData = { type: 'text', content: part.text };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(textData)}\n\n`));
+        // No function calls - stream text response with SSE
+        const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+        const streamResponse = await fetch(streamUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: conversationContents,
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig,
+          }),
+        });
+
+        if (!streamResponse.ok || !streamResponse.body) {
+          // Fallback to non-streamed content
+          for (const part of content.parts || []) {
+            if (part.text) {
+              // Check if this is a thought or regular text
+              if (part.thought) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: part.text })}\n\n`));
+              } else {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: part.text })}\n\n`));
+              }
+            }
           }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+          return;
+        }
+
+        // Stream the SSE response
+        const reader = streamResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let thinkingStarted = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonData = line.slice(6);
+              if (!jsonData || jsonData === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(jsonData);
+                const parts = parsed.candidates?.[0]?.content?.parts || [];
+
+                for (const part of parts) {
+                  if (!part.text) continue;
+
+                  // Check if this is a thought (Gemini 2.5/3.0 thinking)
+                  if (part.thought) {
+                    if (!thinkingStarted) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
+                      thinkingStarted = true;
+                    }
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: part.text })}\n\n`));
+                  } else {
+                    // End thinking if we were in it
+                    if (thinkingStarted) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
+                      thinkingStarted = false;
+                    }
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: part.text })}\n\n`));
+                  }
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+
+        // End thinking if still active
+        if (thinkingStarted) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
         }
 
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));

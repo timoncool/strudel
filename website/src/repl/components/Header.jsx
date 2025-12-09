@@ -9,6 +9,7 @@ import { useSettings, setIsZen, setMasterVolumeSettings } from '../../settings.m
 import { setMasterVolume } from '@strudel/webaudio';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GIT_COMMIT } from '../../version';
+import { Recorder } from './Recorder';
 import '../Repl.css';
 
 const { BASE_URL } = import.meta.env;
@@ -251,7 +252,11 @@ export function Header({ context, embedded = false }) {
             </button>
           </div>
         )}
-        {/* Version - after undo/redo arrows */}
+        {/* Recorder - after undo/redo arrows */}
+        {!isZen && !isButtonRowHidden && !isEmbedded && (
+          <Recorder started={started} />
+        )}
+        {/* Version - after recorder */}
         {!isZen && !isButtonRowHidden && (
           <span className="text-xs text-foreground opacity-40 font-mono ml-2">{GIT_COMMIT}</span>
         )}

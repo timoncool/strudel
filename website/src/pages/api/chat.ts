@@ -609,8 +609,12 @@ async function runOpenAIAgent(
   const encoder = new TextEncoder();
 
   // Check model capabilities
-  const noTemperatureSupport = /^o[134](-|$)/.test(model) || model.startsWith('gpt-5');
-  const isReasoningModel = /^o[134](-|$)/.test(model);
+  // o-series (o1, o3, o4) - no temperature, no tools
+  // gpt-5 series - supports temperature, has reasoning_effort parameter
+  const isOSeriesReasoning = /^o[134](-|$)/.test(model);
+  const isGPT5Reasoning = model.startsWith('gpt-5');
+  const noTemperatureSupport = isOSeriesReasoning; // Only o-series has no temperature
+  const isReasoningModel = isOSeriesReasoning; // Only o-series can't use tools
 
   return new ReadableStream({
     async start(controller) {
@@ -631,7 +635,7 @@ async function runOpenAIAgent(
           stream: true, // Always stream!
         };
 
-        // Add tools only for non-reasoning models
+        // Add tools only for non-reasoning models (o-series can't use tools)
         if (!isReasoningModel) {
           requestBody.tools = TOOLS_OPENAI;
           requestBody.tool_choice = 'auto';
@@ -640,6 +644,11 @@ async function runOpenAIAgent(
         // Add temperature only for models that support it
         if (!noTemperatureSupport) {
           requestBody.temperature = 0.7;
+        }
+
+        // GPT-5 series: use reasoning_effort parameter for thinking
+        if (isGPT5Reasoning) {
+          requestBody.reasoning_effort = 'medium'; // low, medium, high, or none
         }
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -906,6 +915,8 @@ async function runAnthropicAgent(
 
         // For tool_use blocks, accumulate input JSON
         const toolInputBuffers: Map<number, string> = new Map();
+        // For thinking blocks, accumulate signature
+        const thinkingSignatures: Map<number, string> = new Map();
 
         while (true) {
           const { done, value } = await reader.read();
@@ -938,6 +949,7 @@ async function runAnthropicAgent(
                   isInThinkingBlock = true;
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
                   contentBlocks[currentBlockIndex] = { type: 'thinking', thinking: '' };
+                  thinkingSignatures.set(currentBlockIndex, '');
                 }
                 else if (block?.type === 'text') {
                   isInThinkingBlock = false;
@@ -966,6 +978,11 @@ async function runAnthropicAgent(
                   }
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: delta.thinking })}\n\n`));
                 }
+                // Signature delta (for thinking blocks)
+                else if (delta?.type === 'signature_delta' && delta?.signature) {
+                  const current = thinkingSignatures.get(idx) || '';
+                  thinkingSignatures.set(idx, current + delta.signature);
+                }
                 // Text delta
                 else if (delta?.type === 'text_delta' && delta?.text) {
                   if (contentBlocks[idx]) {
@@ -984,8 +1001,12 @@ async function runAnthropicAgent(
               if (parsed.type === 'content_block_stop') {
                 const idx = parsed.index;
 
-                // End thinking block
+                // End thinking block - add signature
                 if (contentBlocks[idx]?.type === 'thinking') {
+                  const signature = thinkingSignatures.get(idx);
+                  if (signature) {
+                    contentBlocks[idx].signature = signature;
+                  }
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_end' })}\n\n`));
                   isInThinkingBlock = false;
                 }

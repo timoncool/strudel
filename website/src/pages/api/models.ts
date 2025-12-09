@@ -26,7 +26,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
     const data = await response.json();
     const models: ModelInfo[] = [];
 
-    // Filter ONLY chat-capable models
+    // Filter ONLY chat-capable models with full tool support
     const validModels = (data.data || [])
       .filter((m: any) => {
         const id = m.id.toLowerCase();
@@ -38,13 +38,16 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
           return false;
         }
 
-        // Include only chat-compatible models
+        // EXCLUDE o-series (o1, o3, o4) - they don't support tools!
+        if (id.match(/^o[134](-|$)/)) return false;
+
+        // Include only chat-compatible models with tool support
         // GPT-5.x chat models
         if (id.includes('gpt-5') && id.includes('chat')) return true;
+        // GPT-5.1 chat models
+        if (id.includes('gpt-5.1') && id.includes('chat')) return true;
         // GPT-5 mini/nano (usually chat)
-        if (id.match(/gpt-5[.-]?(mini|nano)$/)) return true;
-        // o-series reasoning (o1, o3, o4)
-        if (id.match(/^o[134](-|$)/)) return true;
+        if (id.match(/gpt-5[.-]?(mini|nano)/)) return true;
         // GPT-4o and variants
         if (id.startsWith('gpt-4o')) return true;
         // GPT-4 turbo
@@ -55,14 +58,12 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
       .sort((a: any, b: any) => {
         // Prioritize newer models
         const priority = (id: string) => {
-          if (id.includes('gpt-5') && id.includes('chat')) return 1;
-          if (id.includes('gpt-5-mini') || id.includes('gpt-5.1-mini')) return 2;
-          if (id.startsWith('o3')) return 3;
-          if (id.startsWith('o4')) return 4;
-          if (id.startsWith('o1') && !id.includes('mini')) return 5;
-          if (id.startsWith('o1-mini')) return 6;
-          if (id.startsWith('gpt-4o') && !id.includes('mini')) return 7;
-          if (id.includes('gpt-4o-mini')) return 8;
+          if (id.includes('gpt-5.1') && id.includes('chat')) return 1;
+          if (id.includes('gpt-5') && id.includes('chat')) return 2;
+          if (id.includes('gpt-5.1-mini') || id.includes('gpt-5-mini')) return 3;
+          if (id.startsWith('gpt-4o') && !id.includes('mini')) return 4;
+          if (id.includes('gpt-4o-mini')) return 5;
+          if (id.includes('gpt-4-turbo')) return 6;
           return 10;
         };
         return priority(a.id) - priority(b.id);
@@ -74,7 +75,6 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
       if (m.id.includes('chat')) label = `${m.id} (чат)`;
       else if (m.id.includes('mini')) label = `${m.id} (быстрый)`;
       else if (m.id.includes('nano')) label = `${m.id} (легкий)`;
-      else if (m.id.match(/^o[134]/)) label = `${m.id} (рассуждения)`;
 
       models.push({ value: m.id, label });
     }

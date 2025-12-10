@@ -58,7 +58,7 @@ note("c2 ~ c2 g1").s("sawtooth").lpf(400).decay(0.2)`,
   'ambient': `// Ambient pad
 note("c3 e3 g3 b3").s("sawtooth")
   .attack(0.5).release(2).lpf(800)
-  .room(0.8).size(0.9).delay(0.3)._scope()`,
+  .room(0.8).roomsize(0.9).delay(0.3)._scope()`,
 
   'melody': `// Мелодия с визуализацией
 note("c4 e4 g4 e4 f4 a4 g4 ~")
@@ -937,7 +937,7 @@ chord("<Em C Am D>") — аккордовая прогрессия
 .gain(0.8)           — громкость
 .lpf(800) / .hpf(200) — фильтры
 .delay(0.5)          — задержка
-.room(0.5).size(0.8) — реверберация
+.room(0.5).roomsize(0.8) — реверберация
 .distort(0.3)        — перегруз
 .pan(sine)           — панорама
 

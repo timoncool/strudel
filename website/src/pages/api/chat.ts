@@ -16,6 +16,161 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_PATH = path.resolve(__dirname, '../../../../docs_md');
 
 /**
+ * Code examples library - loaded on demand via getExamples tool
+ * This reduces system prompt size significantly
+ */
+const CODE_EXAMPLES: Record<string, string> = {
+  'arrangement': `// Трек с аранжировкой
+cpm(116/2);
+const progression = chord("<Em C Am D>");
+const intro = stack(
+  s("bd sd bd sd").gain(0.8)._scope(),
+  s("hh*8").gain(0.6),
+  n("<4 2 5 3>").set(progression).voicing().add(12).s("piano").room(0.5)._pianoroll()
+);
+const verse = stack(
+  s("bd ~ sd ~"), s("hh*8").gain(0.5),
+  progression.rootNotes(2).s("square").lpf(700)
+);
+arrange([4, intro], [8, verse], [4, intro]);`,
+
+  'hiphop': `// Hip-Hop / Trap бит
+s("bd ~ ~ bd ~ ~ sd ~").bank("RolandTR808").gain(1.2)
+s("hh*8").bank("RolandTR808").gain(0.6)
+note("c1 ~ c1 ~").s("sawtooth").lpf(200).gain(0.8) // 808 бас`,
+
+  'techno': `// Techno / House бит
+s("bd*4").bank("RolandTR909").gain(0.9)
+s("~ sd ~ sd").bank("RolandTR909")
+s("hh*8").bank("RolandTR909").gain(0.5)
+note("c2 c2 c2 c2").s("sawtooth").lpf(500)`,
+
+  'ukgarage': `// UK Garage / 2-step
+s("spk_kick ~ [~ spk_kick] ~") // шаффл-ритм
+s("~ spk_snare ~ spk_snare")
+s("spk_hat*8").gain(0.5)
+s("spk_808").lpf(500).gain(0.8) // саб-бас`,
+
+  'dnb': `// Drum and Bass
+s("amen").speed(1.6).chop(16)._scope()
+note("c2 ~ c2 g1").s("sawtooth").lpf(400).decay(0.2)`,
+
+  'ambient': `// Ambient pad
+note("c3 e3 g3 b3").s("sawtooth")
+  .attack(0.5).release(2).lpf(800)
+  .room(0.8).size(0.9).delay(0.3)._scope()`,
+
+  'melody': `// Мелодия с визуализацией
+note("c4 e4 g4 e4 f4 a4 g4 ~")
+  .s("piano").room(0.4).delay(0.2)
+  ._pianoroll({labels:1})`,
+
+  'hydra': `// Hydra визуализация (в начале кода!)
+await initHydra()
+osc(8, 0.1, 0.8)
+  .color(0.3, 0.1, 1)
+  .kaleid(5)
+  .scale(H("0.8 1.2 0.9 1.5"))
+  .rotate(0.2, 0.05)
+  .out()
+
+// Музыка после Hydra
+stack(s("bd sd bd sd"), s("hh*8"))`,
+
+  'sliders': `// Интерактивные слайдеры
+s("bd sd bd sd")
+  .lpf(slider(800, 200, 4000))
+  .room(slider(0.3, 0, 1))
+  .gain(slider(0.8, 0, 1))`,
+};
+
+/**
+ * Get code examples by category
+ */
+function getCodeExamples(category?: string): string {
+  if (category && CODE_EXAMPLES[category.toLowerCase()]) {
+    return CODE_EXAMPLES[category.toLowerCase()];
+  }
+
+  // Return list of available categories
+  const categories = Object.keys(CODE_EXAMPLES);
+  let result = `Доступные категории примеров: ${categories.join(', ')}\n\n`;
+
+  // If no specific category, return first 3 examples
+  const firstThree = categories.slice(0, 3);
+  for (const cat of firstThree) {
+    result += `### ${cat}\n\`\`\`javascript\n${CODE_EXAMPLES[cat]}\n\`\`\`\n\n`;
+  }
+
+  return result;
+}
+
+/**
+ * Helper for retrying API calls with exponential backoff
+ * Respects retry-after header from API responses
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<Response> {
+  const baseDelay = 2000; // 2 seconds
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    // Success - return response
+    if (response.ok) {
+      return response;
+    }
+
+    // Check if rate limited (429) or server error (5xx)
+    const isRateLimited = response.status === 429;
+    const isServerError = response.status >= 500 && response.status < 600;
+
+    // Only retry on rate limit or server errors
+    if (!isRateLimited && !isServerError) {
+      return response; // Return error response for client handling
+    }
+
+    // Check if we've exhausted retries
+    if (attempt >= maxRetries) {
+      return response; // Return the final error response
+    }
+
+    // Calculate delay - use retry-after header if available
+    let delay: number;
+    const retryAfter = response.headers.get('retry-after');
+
+    if (retryAfter) {
+      // retry-after can be seconds or HTTP date
+      const retrySeconds = parseInt(retryAfter, 10);
+      if (!isNaN(retrySeconds)) {
+        delay = retrySeconds * 1000;
+      } else {
+        // Try parsing as HTTP date
+        const retryDate = new Date(retryAfter);
+        delay = Math.max(0, retryDate.getTime() - Date.now());
+      }
+      // Cap at 60 seconds to avoid excessive waits
+      delay = Math.min(delay, 60000);
+    } else {
+      // Exponential backoff: 2s, 4s, 8s, 16s
+      delay = baseDelay * Math.pow(2, attempt);
+    }
+
+    // Add some jitter to prevent thundering herd
+    delay = delay + Math.random() * 1000;
+
+    console.log(`[API] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  // This should never be reached, but TypeScript needs it
+  throw new Error('Unexpected end of retry loop');
+}
+
+/**
  * Tool definitions for the agent
  * Artifact-style editing: read, edit specific parts, append
  */
@@ -143,6 +298,19 @@ const TOOLS_OPENAI = [
       name: 'getConsole',
       description: 'Получить логи консоли для отладки. СНАЧАЛА остановит воспроизведение, затем покажет последние сообщения консоли. Используй когда пользователь жалуется на ошибку или нужно понять что происходит.',
       parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'getExamples',
+      description: 'Получить примеры кода по категории. Категории: arrangement (аранжировка), hiphop, techno, ukgarage, dnb, ambient, melody, hydra (визуализация), sliders (интерактивность). Вызови без параметра чтобы увидеть список категорий.',
+      parameters: {
+        type: 'object',
+        properties: {
+          category: { type: 'string', description: 'Категория примера: arrangement, hiphop, techno, ukgarage, dnb, ambient, melody, hydra, sliders' },
+        },
+      },
     },
   },
 ];
@@ -454,6 +622,10 @@ let bass = note("c2 e2 g2 e2")
 ### getConsole()
 Получить логи консоли для отладки. СНАЧАЛА остановит воспроизведение.
 Используй когда пользователь жалуется на ошибку или нужно понять что происходит.
+
+### getExamples(category)
+Получить примеры кода по категории. Вызови когда нужен пример или вдохновение.
+Категории: arrangement, hiphop, techno, ukgarage, dnb, ambient, melody, hydra, sliders.
 </tools>
 
 <sample_packs>
@@ -675,143 +847,6 @@ arrange([4, intro], [8, verse], [8, chorus])  — аранжировка
 slider(value, min, max)  — ползунок для значения
 </strudel_reference>
 
-<advanced_examples>
-## ПРОДВИНУТЫЕ ПРИМЕРЫ
-
-### Пример 1: Полноценный трек с аранжировкой
-// @title Love Again
-cpm(116/2);
-const progression = chord("<Em C Am D>");
-
-// === ИНТРО ===
-const intro = stack(
-  s("bd sd bd sd").gain(slider(0.8, 0, 1))._scope(),
-  s("hh*8").gain(0.6)._scope(),
-  n("<4 2 5 3>").set(progression).voicing().add(12)
-    .s("piano").room(0.5).delay(0.25)._pianoroll()
-);
-
-// === КУПЛЕТ ===
-const verse = stack(
-  s("bd ~ sd ~").gain(0.8)._scope(),
-  s("hh*8").gain(0.5),
-  progression.rootNotes(2).s("square").lpf(700)._scope(),
-  n("<4 2 5 3>").set(progression).voicing().add(12)
-    .s("piano").room(0.5)._pianoroll()
-);
-
-// === ДРОП ===
-const drop = stack(
-  s("bd*4").lpf(1000).room(0.7).gain(0.9)._scope(),
-  progression.rootNotes(1).s("sawtooth").distort("1:0.2")._scope(),
-  n("4*4").set(progression).voicing().add(12)
-    .s("sawtooth").lpf(400).decay(0.15)._pianoroll()
-);
-
-// Аранжировка
-arrange(
-  [4, intro],
-  [8, verse],
-  [8, drop],
-  [4, intro]
-);
-
-### Пример 2: Ремейк в стиле Charli XCX
-// @title 360 style remake
-let cpm = 120/4;
-
-// === ЛИДОВЫЙ СИНТ ===
-let lead = arrange(
-  [3, "<[[e3,b3] ~ c4 ~] [e3 ~ f3 c4]>*4"],
-  [1, "<[~ ~ [g3,b3] ~] [g3 ~ a3 c4]>*4"]
-).note().s("sawtooth")
-  .attack(0).decay(.25).sustain(0)
-  .lpf(slider(300, 100, 2000)).lpenv(3)
-  .delay(.2)._pianoroll();
-
-// === БАСОВАЯ СЕКЦИЯ ===
-let bass = arrange(
-  [2, "<[e2 ~] [~ ~ e2 f2] [~ f1] [~]>*4"],
-  [1, "<[~ e2] [e2 ~ e2 f2] [~ f1] [~]>*4"]
-).note().s("gm_synth_bass_2:0")
-  .attack(0).decay(.5).lpf(1800)._scope();
-
-// === УДАРНЫЕ ===
-let drums = stack(
-  s("<[bd ~] [~ ~ bd bd] [~ bd] [~]>*4").bank("RolandTR808").gain(1.5),
-  s("<[~] [cp] [~] [cp]>*4").bank("RolandTR808")
-)._scope();
-
-stack(lead, bass, drums).cpm(cpm);
-
-### Пример 3: Атмосферный ремейк BIRDS OF A FEATHER
-// @title BIRDS OF A FEATHER style
-setcps(105/60/4);
-
-// === МЕЛОДИЯ с калимбой ===
-let melody = note("<[D@3 A@2 ~ D@2] [Cs@2 ~ A@2 ~ Cs@2]>".add("12,24"))
-  .s("gm_kalimba:3").legato(1.5).fast(2)
-  .attack(.025).release(.2).lp(1000)
-  .room(".6:2").postgain(1.5)
-  ._pitchwheel({edo:12,hapRadius:3});
-
-// === УДАРНЫЕ с визуализацией ===
-let drums = stack(
-  s("[bd:<1 0>(<3 1>,8,<0 2>:1.3)] , [~ sd:<15>:2.5]")
-    .note("B1").bank("LinnDrum").decay(.3).room(".3:2").fast(2),
-  s("[LinnDrum_hh(<3 2>,8)]").hp("1000").lp("9000")
-    .decay(.3).velocity([".8 .6"]).room(".3:2").fast(2)
-)._pianoroll({vertical:0,flipTime:1,labels:1});
-
-// === АККОРДЫ ===
-let chords = n(\`<[[0,2,4,6] ~!3] ~ ~ ~
-[[-1,0,2,4] ~!3] ~ ~ ~
-[[1,3,5,7] ~!3]  ~ ~ ~
-[[-2,0,1,3] ~!3]  ~ [[-2,-1,1,3] ~!3] ~>\`)
-  .scale("D:major").s("gm_epiano1:6")
-  .decay(1.5).release(.25).lp(2500)
-  .delay(".45:.1:.3").room(".6:2").fast(2);
-
-// === БАС ===
-let bass = n("<0 -1 1 -2>/2").scale("D1:major")
-  .s("gm_lead_8_bass_lead:1")
-  .lp(800).clip(.1).attack(.2).release(.12)
-  .delay(".45:.1:.3").room(".6:2")._pianoroll({labels:1});
-
-// Финальный микс
-stack(melody, drums, chords, bass);
-
-### Пример 4: Coastline - компактный но богатый трек
-// "coastline" @by eddyflux
-samples('github:eddyflux/crate')
-setcps(.75)
-let chords = chord("<Bbm9 Fm9>/4").dict('ireal')
-stack(
-  stack( // === УДАРНЫЕ ===
-    s("bd").struct("<[x*<1 2> [~@3 x]] x>"),
-    s("~ [rim, sd:<2 3>]").room("<0 .2>"),
-    n("[0 <1 3>]*<2!3 4>").s("hh"),
-    s("rd:<1!3 2>*2").mask("<0 0 1 1>/16").gain(.5)
-  ).bank('crate')
-  .mask("<[0 1] 1 1 1>/16".early(.5))
-  , // === АККОРДЫ ===
-  chords.offset(-1).voicing().s("gm_epiano1:1")
-  .phaser(4).room(.5)
-  , // === МЕЛОДИЯ ===
-  n("<0!3 1*2>").set(chords).mode("root:g2")
-  .voicing().s("gm_acoustic_bass"),
-  chords.n("[0 <4 3 <2 5>>*2](<3 5>,8)")
-  .anchor("D5").voicing()
-  .segment(4).clip(rand.range(.4,.8))
-  .room(.75).shape(.3).delay(.25)
-  .fm(sine.range(3,8).slow(8))
-  .lpf(sine.range(500,1000).slow(8)).lpq(5)
-  .rarely(ply("2")).chunk(4, fast(2))
-  .gain(perlin.range(.6, .9))
-  .mask("<0 1 1 0>/16")
-)
-.late("[0 .01]*4").late("[0 .01]*2").size(4)
-</advanced_examples>
 
 <response_format>
 ## ФОРМАТ ОТВЕТА
@@ -925,14 +960,18 @@ async function runOpenAIAgent(
           requestBody.temperature = 0.7;
         }
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+        const response = await fetchWithRetry(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
           },
-          body: JSON.stringify(requestBody),
-        });
+          3 // maxRetries
+        );
 
         if (!response.ok) {
           const errText = await response.text();
@@ -1051,6 +1090,15 @@ async function runOpenAIAgent(
                 content: docs.join('\n\n---\n\n') || 'Ничего не найдено',
               });
             }
+            else if (toolName === 'getExamples') {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '📝 Получаю примеры кода...' })}\n\n`));
+              const examples = getCodeExamples(toolArgs.category);
+              conversationMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: examples,
+              });
+            }
             // Client-side tools
             else {
               let statusMessage = '';
@@ -1130,10 +1178,17 @@ async function runAnthropicAgent(
         maxIterations--;
 
         // Build streaming request - ALWAYS stream
+        // Use structured system prompt with cache_control for prompt caching
         const requestBody: any = {
           model,
           max_tokens: supportsThinking ? 16000 : 4096,
-          system: systemPrompt,
+          system: [
+            {
+              type: 'text',
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' }, // Cache system prompt to reduce rate limit impact
+            }
+          ],
           messages: conversationMessages,
           tools: TOOLS_ANTHROPIC,
           stream: true, // Always stream!
@@ -1147,15 +1202,20 @@ async function runAnthropicAgent(
           };
         }
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
+        const response = await fetchWithRetry(
+          'https://api.anthropic.com/v1/messages',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-beta': 'prompt-caching-2024-07-31', // Enable prompt caching to reduce rate limit impact
+            },
+            body: JSON.stringify(requestBody),
           },
-          body: JSON.stringify(requestBody),
-        });
+          3 // maxRetries
+        );
 
         if (!response.ok) {
           const errText = await response.text();
@@ -1335,6 +1395,15 @@ async function runAnthropicAgent(
                 content: docs.join('\n\n---\n\n') || 'Ничего не найдено',
               });
             }
+            else if (toolName === 'getExamples') {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '📝 Получаю примеры кода...' })}\n\n`));
+              const examples = getCodeExamples(toolArgs.category);
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: block.id,
+                content: examples,
+              });
+            }
             // Client-side tools
             else {
               let statusMessage = '';
@@ -1450,16 +1519,20 @@ async function runGeminiAgent(
         // ALWAYS use streaming SSE endpoint
         const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
-        const response = await fetch(streamUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: conversationContents,
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            tools: geminiTools,
-            generationConfig,
-          }),
-        });
+        const response = await fetchWithRetry(
+          streamUrl,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: conversationContents,
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              tools: geminiTools,
+              generationConfig,
+            }),
+          },
+          3 // maxRetries
+        );
 
         if (!response.ok) {
           const errText = await response.text();
@@ -1591,6 +1664,16 @@ async function runGeminiAgent(
                 functionResponse: {
                   name: toolName,
                   response: { content: docs.join('\n\n---\n\n') || 'Ничего не найдено' },
+                },
+              });
+            }
+            else if (toolName === 'getExamples') {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '📝 Получаю примеры кода...' })}\n\n`));
+              const examples = getCodeExamples(toolArgs.category);
+              functionResponses.push({
+                functionResponse: {
+                  name: toolName,
+                  response: { content: examples },
                 },
               });
             }

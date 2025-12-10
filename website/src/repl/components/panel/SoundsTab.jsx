@@ -66,7 +66,7 @@ export function SoundsTab() {
   const { BASE_URL } = import.meta.env;
   const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
 
-  // Извлекаем все доступные паки и подсчитываем звуки в каждом
+  // Извлекаем все доступные паки и подсчитываем общее количество семплов в каждом
   const availablePacks = useMemo(() => {
     if (!sounds) {
       return {};
@@ -76,7 +76,16 @@ export function SoundsTab() {
       .filter(([key]) => !key.startsWith('_'))
       .forEach(([_, { data }]) => {
         const pack = data.pack || 'other';
-        packs[pack] = (packs[pack] || 0) + 1;
+        // Считаем реальное количество семплов, а не банков
+        let sampleCount = 1;
+        if (data?.type === 'sample' && data.samples) {
+          sampleCount = getSamples(data.samples);
+        } else if (data?.type === 'wavetable' && data.tables) {
+          sampleCount = getSamples(data.tables);
+        } else if (data?.type === 'soundfont' && data.fonts) {
+          sampleCount = data.fonts.length;
+        }
+        packs[pack] = (packs[pack] || 0) + sampleCount;
       });
     return packs;
   }, [sounds]);
@@ -394,6 +403,7 @@ export function SoundsTab() {
             expandedPacks={expandedPacks}
             onTogglePack={handleTogglePack}
             renderSound={renderSound}
+            trigRef={trigRef}
           />
         )}
         {/* Плоский режим */}

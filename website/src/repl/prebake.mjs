@@ -72,6 +72,7 @@ export async function prebake() {
       prebake: true,
       pack: 'felixroos',
     }),
+    // Sparkway Drum Kit - UK Garage / Future Garage drum samples
     samples(`${baseNoTrailing}/samples/sparkway-drum-kit/strudel.json`, `${baseNoTrailing}/samples/sparkway-drum-kit/`, {
       prebake: true,
       tag: 'drum-machines',

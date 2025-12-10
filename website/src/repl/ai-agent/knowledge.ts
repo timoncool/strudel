@@ -600,6 +600,23 @@ s("arpy*4").gain(sine.range(0.3, 1).slow(2))
     category: 'effects',
     keywords: ['gain', 'громкость', 'velocity', 'accent', 'volume', 'динамика'],
   },
+
+  // CRITICAL WARNING for agent
+  {
+    id: 'critical-tools-usage',
+    title: '🚨 КРИТИЧЕСКОЕ ПРАВИЛО: Использование тулов',
+    content: `НИКОГДА не придумывай названия звуков из головы!
+
+ОБЯЗАТЕЛЬНО:
+- ПЕРЕД s("название") → вызови getAvailablePacks()
+- ПЕРЕД .bank("pack:N") → вызови getBankSamples("pack")
+- Если пользователь говорит "не работает" → проверь через getAvailablePacks()
+- Если не уверен → searchDocs('samples') или getAvailablePacks()
+
+Используй ТОЛЬКО существующие звуки из ответа тула!`,
+    category: 'general',
+    keywords: ['samples', 'банки', 'banks', 'packs', 'tools', 'getAvailablePacks', 'getBankSamples', 'ошибка', 'error'],
+  },
 ];
 
 /**

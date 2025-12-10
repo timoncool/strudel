@@ -617,6 +617,642 @@ s("arpy*4").gain(sine.range(0.3, 1).slow(2))
     category: 'general',
     keywords: ['samples', 'банки', 'banks', 'packs', 'tools', 'getAvailablePacks', 'getBankSamples', 'ошибка', 'error'],
   },
+
+  // Wavetable Synthesis
+  {
+    id: 'wavetable-synthesis',
+    title: 'Wavetable синтез',
+    content: `Wavetable synthesis - синтез на основе wavetable осцилляторов.
+
+Позиция в wavetable:
+\`\`\`
+note("c3").s("bass")
+  .wt(0.3)              // позиция в wavetable (0-1)
+  .wtenv(0.5)           // envelope amount
+  .wtattack(0.01)       // attack
+  .wtdecay(0.2)         // decay
+  .wtsustain(0.7)       // sustain
+  .wtrelease(0.5)       // release
+\`\`\`
+
+LFO модуляция wavetable:
+\`\`\`
+note("c3").s("bass")
+  .wt(0.5)
+  .wtrate(4)            // частота LFO (Hz)
+  .wtdepth(0.3)         // глубина модуляции
+  .wtshape("sine")      // форма LFO
+\`\`\`
+
+Warp (деформация wavetable):
+\`\`\`
+note("c3").s("bass")
+  .warp(0.5)            // деформация (0-1)
+  .warpmode(2)          // режим деформации
+  .warpattack(0.01)
+  .warpdecay(0.2)
+  .warpsustain(0.5)
+  .warprelease(0.3)
+\`\`\`
+
+Комбинация:
+\`\`\`
+note("c3 e3 g3").s("bass")
+  .wt(sine.range(0.2, 0.8).slow(4))
+  .warp(0.3)
+  .lpf(1000)
+\`\`\``,
+    category: 'sounds',
+    keywords: ['wavetable', 'wt', 'warp', 'oscillator', 'синтез', 'wtenv', 'wtattack', 'wtrate', 'wtdepth'],
+  },
+
+  // FM Synthesis
+  {
+    id: 'fm-synthesis',
+    title: 'FM синтез',
+    content: `FM (Frequency Modulation) synthesis - 8 операторов.
+
+Базовый FM:
+\`\`\`
+note("c3").s("sine")
+  .fm(2, 3)             // гармоника 2, индекс 3
+\`\`\`
+
+Отдельные операторы (fm1-fm8):
+\`\`\`
+note("c3").s("sine")
+  .fm1(1, 2)            // оператор 1
+  .fm2(2, 1.5)          // оператор 2
+  .fm3(3, 0.5)          // оператор 3
+\`\`\`
+
+Управление FM:
+\`\`\`
+note("c3").s("sine")
+  .fmh(2)               // гармоника (harmonic)
+  .fmi(3)               // индекс модуляции
+  .fmenv(5)             // envelope amount
+  .fmattack(0.01)
+  .fmdecay(0.2)
+  .fmsustain(0.5)
+  .fmrelease(0.3)
+\`\`\`
+
+Сложный FM тембр:
+\`\`\`
+note("c2 e2 g2").s("sine")
+  .fm1(1, 4)
+  .fm2(2, 2)
+  .fm3(3, 1)
+  .fmenv(8)
+  .lpf(2000)
+\`\`\``,
+    category: 'sounds',
+    keywords: ['fm', 'fm synthesis', 'frequency modulation', 'fmh', 'fmi', 'fmenv', 'operator', 'оператор'],
+  },
+
+  // Advanced Pattern Functions
+  {
+    id: 'advanced-patterns',
+    title: 'Продвинутые функции паттернов',
+    content: `Продвинутые модификаторы паттернов:
+
+Euclidean rhythms:
+\`\`\`
+s("bd").euclidLegacy(3, 8)        // 3 удара на 8 шагов
+s("sd").euclidLegacy(5, 16, 2)    // со смещением 2
+\`\`\`
+
+Iter (вращение паттерна):
+\`\`\`
+s("bd sd hh cp").iter(4)          // вращение каждый цикл
+\`\`\`
+
+Chop (нарезка семпла):
+\`\`\`
+s("amen").chop(8)                 // нарезать на 8 частей
+s("amen").chop(16).rev()          // реверс нарезки
+\`\`\`
+
+Slice (выбор кусочков):
+\`\`\`
+s("amen").slice(8, "0 1 2 3")     // выбрать кусочки
+\`\`\`
+
+Striate (гранулярный):
+\`\`\`
+s("pad").striate(8)               // гранулярная нарезка
+\`\`\`
+
+Segment (деление на сегменты):
+\`\`\`
+note("c4 e4 g4").segment(8)       // разбить на 8 событий
+\`\`\`
+
+Shuffle (перемешать):
+\`\`\`
+s("bd sd hh cp").shuffle(4)       // случайный порядок
+\`\`\`
+
+Palindrome (туда-обратно):
+\`\`\`
+s("bd sd hh cp").palindrome()     // bd sd hh cp hh sd
+\`\`\``,
+    category: 'functions',
+    keywords: ['euclidean', 'iter', 'chop', 'slice', 'striate', 'segment', 'shuffle', 'palindrome', 'продвинутые'],
+  },
+
+  // Time Modifiers
+  {
+    id: 'time-modifiers',
+    title: 'Модификаторы времени',
+    content: `Продвинутые функции работы со временем:
+
+Early/Late (смещение):
+\`\`\`
+s("bd sd").early(0.1)             // раньше на 0.1 цикла
+s("hh*8").late(0.05)              // позже на 0.05
+\`\`\`
+
+Hurry (ускорение с pitch):
+\`\`\`
+s("bd sd hh cp").hurry(2)         // быстрее + выше
+s("arpy*4").hurry(0.5)            // медленнее + ниже
+\`\`\`
+
+Compress (сжатие в часть цикла):
+\`\`\`
+s("bd sd hh cp").compress(0, 0.5) // в первую половину
+s("arpy*4").compress(0.5, 1)      // во вторую половину
+\`\`\`
+
+Inside (выполнить в части цикла):
+\`\`\`
+s("bd sd").inside(2, rev)         // реверс в каждой половине
+\`\`\`
+
+Outside (выполнить на N циклах):
+\`\`\`
+s("bd sd").outside(4, fast(2))    // fast каждые 4 цикла
+\`\`\`
+
+Linger (задержка):
+\`\`\`
+s("bd sd hh cp").linger(0.25)     // каждый звук длится дольше
+\`\`\`
+
+Swing:
+\`\`\`
+s("hh*8").swingBy(0.1)            // свинг
+\`\`\``,
+    category: 'functions',
+    keywords: ['early', 'late', 'hurry', 'compress', 'inside', 'outside', 'linger', 'swing', 'время', 'time'],
+  },
+
+  // Filter Envelopes
+  {
+    id: 'filter-envelopes',
+    title: 'Фильтровые огибающие',
+    content: `Детальное управление фильтрами через ADSR огибающие:
+
+LP Filter Envelope:
+\`\`\`
+note("c2").s("sawtooth")
+  .lpf(100)               // стартовая частота
+  .lpenv(6)               // глубина огибающей (октавы)
+  .lpattack(0.01)         // атака фильтра
+  .lpdecay(0.2)           // затухание
+  .lpsustain(0.3)         // уровень sustain
+  .lprelease(0.5)         // релиз
+\`\`\`
+
+HP Filter Envelope:
+\`\`\`
+s("noise")
+  .hpf(2000)
+  .hpenv(3)
+  .hpattack(0.1)
+  .hpdecay(0.3)
+  .hpsustain(0.5)
+  .hprelease(0.4)
+\`\`\`
+
+BP Filter Envelope:
+\`\`\`
+s("white")
+  .bpf(1000)
+  .bpenv(4)
+  .bpattack(0.01)
+  .bpdecay(0.2)
+  .bpsustain(0.6)
+  .bprelease(0.3)
+\`\`\`
+
+Filter LFO:
+\`\`\`
+note("c3").s("sawtooth")
+  .lpf(500)
+  .lprate(4)              // частота LFO (Hz)
+  .lpdepth(0.5)           // глубина модуляции
+  .lpshape("sine")        // форма LFO
+  .lpdc(0.5)              // DC offset
+\`\`\``,
+    category: 'effects',
+    keywords: ['lpenv', 'hpenv', 'bpenv', 'filter envelope', 'огибающая', 'lpattack', 'lpdecay', 'lprate', 'lpdepth'],
+  },
+
+  // Arrangement
+  {
+    id: 'arrangement',
+    title: 'Аранжировка треков',
+    content: `Создание полной композиции с секциями:
+
+Базовый arrange:
+\`\`\`
+const intro = s("bd sd").room(0.5);
+const verse = stack(
+  s("bd ~ bd ~"),
+  s("~ sd ~ sd"),
+  s("hh*8")
+);
+const chorus = verse.fast(2).room(0.3);
+
+arrange([
+  [4, intro],             // 4 цикла intro
+  [8, verse],             // 8 циклов verse
+  [8, chorus],            // 8 циклов chorus
+  [4, intro]              // 4 цикла outro
+]);
+\`\`\`
+
+С прогрессией:
+\`\`\`
+cpm(120/2);
+
+const progression = chord("<Em C Am D>");
+
+const drums = stack(
+  s("bd sd bd sd"),
+  s("hh*8").gain(0.6)
+);
+
+const bass = progression
+  .rootNotes(2)
+  .s("sawtooth")
+  .lpf(400);
+
+const melody = n("<4 2 5 3>")
+  .set(progression)
+  .voicing()
+  .add(12)
+  .s("piano");
+
+const intro = drums;
+const verse = stack(drums, bass);
+const chorus = stack(drums, bass, melody);
+
+arrange([
+  [4, intro],
+  [8, verse],
+  [8, chorus],
+  [8, verse],
+  [8, chorus],
+  [4, intro]
+]);
+\`\`\``,
+    category: 'examples',
+    keywords: ['arrange', 'arrangement', 'аранжировка', 'structure', 'структура', 'song', 'композиция'],
+  },
+
+  // Music Theory: Chord Progressions
+  {
+    id: 'chord-progressions',
+    title: 'Прогрессии аккордов (Chord Progressions)',
+    content: `Chord progressions - последовательности аккордов, создающие гармоническую основу композиции.
+
+Популярные прогрессии:
+\`\`\`
+// I-V-VI-IV (поп-музыка)
+const prog1 = chord("<C G Am F>");
+
+// I-VI-IV-V (эмоциональная)
+const prog2 = chord("<Em C Am D>");
+
+// VI-IV-II-V (минорная)
+const prog3 = chord("<Am F Dm E>");
+
+// Для танцевальной музыки
+const prog4 = chord("<Ab Cm Bb F@2>");
+
+// Jazz (ii-V-I)
+const jazz = chord("<Dm7 G7 C^7>");
+\`\`\`
+
+Как использовать прогрессии:
+\`\`\`
+const progression = chord("<C G Am F>");
+
+// Бас из корневых нот:
+progression.rootNotes(2).s("sine").lpf(400)
+
+// Аккорды с voicing:
+progression.voicing().s("piano")
+
+// Мелодия следует за аккордами:
+n("<4 2 5 3>").set(progression).voicing().add(12)
+\`\`\`
+
+Модуляция (смена тональности):
+\`\`\`
+// Переход C major → G major
+chord("<C F G@2 | G C D@2>")
+
+// Или через .transpose():
+chord("<C G Am F>").transpose("<0 | 5>")
+\`\`\``,
+    category: 'theory',
+    keywords: ['chord progression', 'прогрессия', 'аккорды', 'harmony', 'гармония', 'модуляция', 'тональность'],
+  },
+
+  // Melody Writing
+  {
+    id: 'melody-writing',
+    title: 'Создание мелодий',
+    content: `Как создавать красивые, запоминающиеся мелодии:
+
+1. Мелодия следует за аккордами:
+\`\`\`
+const progression = chord("<C G Am F>");
+
+// Мелодия из степеней аккордов:
+n("<0 2 4 2>")              // 1, 3, 5, 3 ступени
+  .set(progression)         // Привязка к прогрессии
+  .voicing()               // Правильные ноты
+  .add(12)                 // Октава выше
+  .s("piano")
+\`\`\`
+
+2. Использование scale():
+\`\`\`
+// Минорная мелодия:
+n("0 2 3 5 7 5 3 2")
+  .scale("c4:minor")
+  .s("triangle")
+
+// Мажорная:
+n("0 2 4 5 7 9 11 12")
+  .scale("c3:major")
+  .s("sine")
+\`\`\`
+
+3. Арпеджио (разложенные аккорды):
+\`\`\`
+const progression = chord("<Am F C G>");
+
+// Восходящее арпеджио:
+n(run(8))                   // 0 1 2 3 4 5 6 7
+  .set(progression)
+  .voicing()
+  .s("sine")
+
+// Или вручную:
+n("<0 2 4 6>")
+  .set(progression)
+  .voicing()
+\`\`\`
+
+4. Мотив и вариации:
+\`\`\`
+// Основной мотив:
+const motif = n("0 2 4 2");
+
+// Вариация 1 - транспозиция:
+motif.add(2)                // На тон выше
+
+// Вариация 2 - реверс:
+motif.rev()
+
+// Вариация 3 - удлинение:
+motif.slow(2)
+\`\`\`
+
+5. Контурные мелодии:
+\`\`\`
+// Восходящая:
+n("0 1 2 3 4 5 6 7")
+
+// Нисходящая:
+n("7 6 5 4 3 2 1 0")
+
+// Волнообразная:
+n("0 2 4 6 4 2 0 -2")
+\`\`\`
+
+6. Ритмическая вариация:
+\`\`\`
+// Синкопы:
+n("c4 ~ e4 ~ g4 ~ e4 ~")
+
+// Триоли:
+n("c4 e4 g4").fast(3/2)
+
+// Пунктирный ритм:
+n("[c4@3 e4] [g4@3 e4]")
+\`\`\``,
+    category: 'theory',
+    keywords: ['melody', 'мелодия', 'composition', 'композиция', 'writing', 'создание', 'arpeggio', 'арпеджио', 'мотив'],
+  },
+
+  // Voicings
+  {
+    id: 'voicings-theory',
+    title: 'Voicings - Озвучивание аккордов',
+    content: `Voicing - способ расположения нот в аккорде.
+
+Основные функции:
+\`\`\`
+// Автоматическое voicing:
+chord("<C G Am F>")
+  .voicing()                // Умное расположение нот
+  .s("piano")
+
+// С anchor (базовая нота):
+chord("<C G Am F>")
+  .anchor("E4")             // Вокруг E4
+  .voicing()
+
+// Режимы:
+chord("<C G Am F>")
+  .mode('root')             // Только корни
+  .voicing()
+
+chord("<C G Am F>")
+  .mode('below')            // Ноты ниже anchor
+  .voicing()
+\`\`\`
+
+Voicing для разных инструментов:
+\`\`\`
+const progression = chord("<C G Am F>");
+
+// Piano (широкое расположение):
+progression
+  .anchor("C4")
+  .voicing()
+  .s("piano")
+
+// Strings (плотное):
+progression
+  .anchor("G3")
+  .voicing()
+  .s("gm_string_ensemble_1")
+
+// Bass (только корни):
+progression
+  .rootNotes(2)             // C2, G2, A2, F2
+  .s("sawtooth")
+  .lpf(400)
+\`\`\`
+
+Drop voicings (джазовые):
+\`\`\`
+// Drop-2 voicing вручную:
+chord("C^7")                // C E G B
+  .layer(
+    x => x.mode('root').voicing(),
+    x => x.mode('above').voicing().add(12)
+  )
+\`\`\`
+
+Leadsheet voicings:
+\`\`\`
+// Preset voicings:
+chord("<C^7 A7b13 Dm7 G7>")
+  .dict('ireal')            // iReal Pro стиль
+  .voicing()
+  .s("piano")
+\`\`\``,
+    category: 'theory',
+    keywords: ['voicing', 'voicings', 'озвучивание', 'аккорды', 'anchor', 'mode', 'расположение', 'drop'],
+  },
+
+  // Scales and Modes
+  {
+    id: 'scales-modes',
+    title: 'Гаммы и лады (Scales & Modes)',
+    content: `Scales - наборы нот, создающие тональность.
+
+Основные гаммы:
+\`\`\`
+// Major (мажор):
+n("0 2 4 5 7 9 11 12")
+  .scale("c4:major")
+
+// Minor (минор):
+n("0 2 3 5 7 8 10 12")
+  .scale("a3:minor")
+
+// Harmonic minor:
+n("0 2 3 5 7 8 11 12")
+  .scale("a3:harmonic minor")
+
+// Melodic minor:
+n("0 2 3 5 7 9 11 12")
+  .scale("a3:melodic minor")
+\`\`\`
+
+Лады (Modes):
+\`\`\`
+// Ionian (мажор):
+n("0 2 4 5 7 9 11").scale("c:ionian")
+
+// Dorian (джазовый минор):
+n("0 2 3 5 7 9 10").scale("d:dorian")
+
+// Phrygian (испанский):
+n("0 1 3 5 7 8 10").scale("e:phrygian")
+
+// Lydian (мечтательный):
+n("0 2 4 6 7 9 11").scale("f:lydian")
+
+// Mixolydian (блюзовый мажор):
+n("0 2 4 5 7 9 10").scale("g:mixolydian")
+
+// Aeolian (натуральный минор):
+n("0 2 3 5 7 8 10").scale("a:aeolian")
+
+// Locrian (уменьшенный):
+n("0 1 3 5 6 8 10").scale("b:locrian")
+\`\`\`
+
+Пентатоника:
+\`\`\`
+// Major pentatonic:
+n("0 2 4 7 9")
+  .scale("c4:major pentatonic")
+
+// Minor pentatonic:
+n("0 3 5 7 10")
+  .scale("a3:minor pentatonic")
+\`\`\`
+
+Экзотические:
+\`\`\`
+// Whole tone:
+n("0 2 4 6 8 10").scale("c:whole")
+
+// Diminished:
+n("0 2 3 5 6 8 9 11").scale("c:diminished")
+
+// Blues:
+n("0 3 5 6 7 10").scale("c:blues")
+\`\`\`
+
+Транспозиция в гамме:
+\`\`\`
+// scaleTranspose - транспозиция по ступеням:
+n("0 2 4 6")
+  .scale("c:major")
+  .scaleTranspose("<0 2 4>")    // Транспозиция на 0, 2, 4 ступени
+\`\`\``,
+    category: 'theory',
+    keywords: ['scale', 'scales', 'гамма', 'гаммы', 'mode', 'modes', 'лад', 'лады', 'pentatonic', 'пентатоника'],
+  },
+
+  // Musical Examples Reference
+  {
+    id: 'gallery-examples',
+    title: 'Примеры из галереи',
+    content: `В галерее есть 10+ полных примеров композиций.
+
+Как получить доступ:
+\`\`\`
+searchDocs('gallery')
+searchDocs('examples')
+searchDocs('chord progression examples')
+\`\`\`
+
+Примеры включают:
+- "Почему я?" - полная композиция с arrange(), chord progressions Am-F-Dm-E
+- "Love Again" - структура intro/verse/chorus/drop с Em-C-Am-D
+- "Blue Monday" - минималистичный электронный трек
+- "The Rhythm of the Night" - dance трек с Ab-Cm-Bb-F
+- "Waltz No. 2" - классический вальс с chord progressions
+- "Pyramid Song" - сложные piano voicings
+- "Happy Birthday" - мелодия с аккордовым аккомпанементом
+- "Shanghai" - прогрессивный рок с модуляцией
+
+Каждый пример показывает:
+- Использование chord progressions
+- Layering (многослойность)
+- Arrangement (структура секций)
+- Voicings (озвучивание аккордов)
+- Melody + Chords взаимодействие
+
+Изучай эти примеры для вдохновения!`,
+    category: 'examples',
+    keywords: ['gallery', 'галерея', 'examples', 'примеры', 'inspiration', 'вдохновение', 'композиция', 'composition'],
+  },
 ];
 
 /**

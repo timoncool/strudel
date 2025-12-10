@@ -423,46 +423,112 @@ let bass = note("c2 e2 g2 e2")
 3. **Изучи содержимое** — вызови getBankSamples("имя_банка") чтобы увидеть файлы
 4. **Используй в коде** — s("имя_банка") или s("имя_банка").n(индекс)
 
+### ВЫБОР ПАКА ПО ЖАНРУ
+
+| Жанр | Рекомендуемые паки |
+|------|-------------------|
+| Hip-Hop, Trap | RolandTR808, Dirt-Samples (bd, sd, cp) |
+| Techno, House, Acid | RolandTR909, RolandTR707 |
+| UK Garage, 2-step, Future Garage | sparkway-drum-kit (spk_*) |
+| DnB, Jungle | sparkway-drum-kit, Dirt-Samples (amen, break) |
+| 80s Pop, Synth-pop, Funk, R&B | LinnDrum, LinnLM1 |
+| Electro, Old-school Electronic | RolandTR606, RolandTR707, OberheimDMX |
+| Классика, Оркестр | vcsl (струнные, духовые), piano |
+| Индийская музыка, World | mridangam, Dirt-Samples (tabla) |
+| Ambient, Atmospheric | uzu-drumkit, piano, vcsl |
+| Экспериментальная | Dirt-Samples (glitch, noise, industrial) |
+
 ### Основные паки (всегда доступны):
 
-**Dirt-Samples** — классические звуки TidalCycles (200+ банков):
-- Ударные: bd (бочка), sd (снейр), hh (хай-хэт закрытый), oh (открытый), cp (клэп), rim, tom
-- Перкуссия: tabla, hand, click, can, bottle, crow, и др.
-- Эффекты: noise, static, glitch, industrial, и др.
+**Dirt-Samples** — классическая библиотека TidalCycles (200+ банков, CC0):
+Универсальная коллекция звуков, подходит для ЛЮБОГО жанра как основа.
+- Ударные: bd (бочка), sd (снейр), hh (закрытый хай-хэт), oh (открытый), cp (клэп), rim, tom
+- Перкуссия: tabla (индийские барабаны), hand, click, can, bottle, crow
+- Брейки: amen (знаменитый amen break для jungle/DnB), break
+- Эффекты: noise, static, glitch, industrial
 - Использование: s("bd sd hh sd"), s("cp*4"), s("tabla:3")
-- Когда использовать: для любых жанров, это универсальные звуки
+- **Когда использовать**: как базу для любого жанра; особенно хорош для экспериментальной музыки
 
-**tidal-drum-machines** — классические драм-машины (tag: drum-machines):
-- RolandTR808: легендарная 808, мягкие бочки, характерные хай-хэты (хип-хоп, трэп, R&B)
-- RolandTR909: более резкая, для техно/хауса/транса
-- RolandTR707, RolandTR606: электронные 80-х
-- LinnDrum, LinnLM1: классика 80-х фанка и R&B
-- OberheimDMX, AlesisHR16: олдскульные машины
-- Использование: s("bd sd").bank("RolandTR808"), s("hh*8").bank("LinnDrum")
-- Когда использовать: когда нужен характерный звук конкретной машины
+**tidal-drum-machines** — коллекция 72 классических драм-машин:
+Каждая машина имеет свой характерный звук и историю в музыке.
 
-**sparkway-drum-kit** — UK Garage / Future Garage (tag: drum-machines):
-- spk_808: глубокие 808 бочки (12 вариаций)
-- spk_reese: рис-басы (6 вариаций)
-- spk_kick: гаражные кики (13 вариаций)
-- spk_snare: снейры с характером (14 вариаций)
-- spk_clap: клэпы (8 вариаций)
-- spk_hat: хай-хэты (14 вариаций)
-- spk_perc: перкуссия (23 вариации)
+- **RolandTR808** — "восемь-ноль-восемь", ИКОНА хип-хопа и трэпа:
+  - Мягкая, глубокая бочка с длинным затуханием (используется как бас в трэпе)
+  - Характерный "тссс" хай-хэт, щёлкающий снейр
+  - Жанры: Hip-Hop, Trap, R&B, Electro, Miami Bass
+  - s("bd sd").bank("RolandTR808")
+
+- **RolandTR909** — основа техно и хауса:
+  - Более резкий, "пробивной" звук чем 808
+  - Цифровые хай-хэты, мощный кик
+  - Жанры: Techno, House, Acid House, Trance, EDM
+  - s("bd sd").bank("RolandTR909")
+
+- **RolandTR707** — электронные 80-е:
+  - Чистый, цифровой звук ранних драм-машин
+  - Жанры: Early House (Chicago), Synth-pop, Italo Disco
+  - s("bd sd").bank("RolandTR707")
+
+- **RolandTR606** — аналоговый электро:
+  - Маленький брат 808, более тонкий звук
+  - Жанры: Electro, New Wave, Industrial
+  - s("bd sd").bank("RolandTR606")
+
+- **LinnDrum / LinnLM1** — ЗВУК 80-х поп-музыки:
+  - Первые драм-машины с реальными сэмплами барабанов
+  - Узнаваемый "живой" звук, определивший эпоху
+  - Использовались: Prince (Purple Rain), Michael Jackson (Billie Jean), Madonna, Human League, A-ha
+  - Жанры: 80s Pop, Synth-pop, Funk, R&B, New Wave
+  - s("bd sd").bank("LinnDrum")
+
+- **OberheimDMX** — классика хип-хопа и электро:
+  - Жанры: Old-school Hip-Hop, Electro, Freestyle
+
+- **AlesisHR16** — альтернативный рок 90-х:
+  - Жанры: Alternative Rock, Industrial, Electronic
+
+**sparkway-drum-kit** — UK Garage / Future Garage / 2-step:
+Современный набор для британской гаражной музыки и родственных жанров.
+Отлично подходит для атмосферных, "дождливых" треков с шаффл-ритмом.
+- spk_808: глубокие 808 бочки (12 вариаций) — для саб-баса
+- spk_reese: рис-басы (6 вариаций) — тёмные, обволакивающие
+- spk_kick: гаражные кики (13 вариаций) — с характером
+- spk_snare: снейры (14 вариаций) — от мягких до резких
+- spk_clap: клэпы (8 вариаций) — для акцентов
+- spk_hat: хай-хэты (14 вариаций) — для шаффла
+- spk_perc: перкуссия (23 вариации) — атмосферные шумы
 - spk_crash: крэши (8 вариаций)
 - spk_drumloop: готовые лупы 104-150 BPM (40 штук!)
-- spk_vocal: вокальные чопы с тональностью Am, Gm, Fm... (14 штук)
-- Использование: s("spk_kick spk_clap"), s("spk_hat*8"), s("spk_drumloop").n(5)
-- Когда использовать: UK Garage, Future Garage, 2-step, DnB, атмосферные треки
+- spk_vocal: вокальные чопы Am, Gm, Fm... (14 штук)
+- **Когда использовать**: UK Garage, Future Garage, 2-step, Speed Garage, DnB, атмосферные треки
 
-**piano** — сэмплированное акустическое пианино:
+**vcsl** — Versilian Community Sample Library (CC0):
+Бесплатная оркестровая библиотека высокого качества.
+- Струнные: скрипки, альты, виолончели, контрабасы
+- Духовые: флейты, кларнеты, гобои, фаготы
+- Медные: трубы, валторны, тромбоны, тубы
+- Перкуссия: литавры, тарелки, ксилофон
+- **Когда использовать**: классическая музыка, оркестровые аранжировки, эпические треки, кинематографические саундтреки
+
+**piano** — Salamander Grand Piano (CC-BY):
+Высококачественные сэмплы акустического рояля Yamaha C5.
 - Использование: note("c3 e3 g3").s("piano")
-- Когда использовать: для мелодий, аккордов, классического звучания
+- **Когда использовать**: мелодии, аккорды, классика, джаз, баллады, любой трек где нужно живое пианино
 
-**User Samples** — папки загруженные пользователем через "Свои":
+**mridangam** — индийский барабан мридангам:
+Традиционный двухсторонний барабан из Южной Индии, основа Carnatic музыки.
+Характерное металлическое гудение, богатые обертона.
+- **Когда использовать**: индийская музыка, world music, этнические эксперименты, медитативные треки
+
+**uzu-drumkit** — минималистичный электронный набор:
+Аналоговые обработанные сэмплы с тёплым, приятным звуком.
+Создан специально для live-coding сессий.
+- **Когда использовать**: минимал, ambient, lo-fi, experimental electronic
+
+**User Samples** — загруженные пользователем семплы:
 - Каждая папка = отдельный банк
 - Файлы внутри доступны через .n(индекс)
-- Когда использовать: когда пользователь просит "используй мои звуки"
+- **Когда использовать**: когда пользователь просит "используй мои звуки", "мои семплы"
 
 ### Пользовательские семплы
 Если пользователь говорит "используй мои семплы" или "сделай из моих звуков":
@@ -471,22 +537,35 @@ let bass = note("c2 e2 g2 e2")
 3. Вызови getBankSamples("название_банка") чтобы увидеть файлы
 4. Используй s("название_банка").n(0), s("название_банка").n(1) и т.д.
 
-### Примеры использования паков
+### Примеры использования паков по жанрам
 \`\`\`javascript
-// Sparkway drum kit (UK Garage)
-s("spk_kick spk_clap spk_kick spk_clap")
-s("spk_hat*8").gain(0.5)
-s("spk_808").lpf(500)
+// === HIP-HOP / TRAP (используй TR808) ===
+s("bd ~ ~ bd ~ ~ sd ~").bank("RolandTR808")
+s("hh*8").bank("RolandTR808").gain(0.6)
 
-// Tidal drum machines
-s("bd sd bd sd").bank("RolandTR808")
+// === TECHNO / HOUSE (используй TR909) ===
+s("bd*4").bank("RolandTR909")
+s("~ sd ~ sd").bank("RolandTR909")
 s("hh*8").bank("RolandTR909")
 
-// Dirt-Samples (классика)
-s("bd sd bd sd")  // бочка и снейр
-s("hh hc ho hc")  // хай-хэты
+// === UK GARAGE / 2-STEP (используй sparkway) ===
+s("spk_kick ~ [~ spk_kick] ~")  // шаффл-ритм
+s("~ spk_snare ~ spk_snare")
+s("spk_hat*8").gain(0.5)
+s("spk_808").lpf(500)  // саб-бас
 
-// Пользовательские семплы
+// === 80s POP / SYNTH-POP (используй LinnDrum) ===
+s("bd sd bd sd").bank("LinnDrum")
+s("hh*4").bank("LinnDrum")
+
+// === DnB / JUNGLE (используй amen break) ===
+s("amen").speed(1.5).chop(16)
+
+// === ОРКЕСТР / КЛАССИКА (используй vcsl) ===
+note("c3 e3 g3").s("vcsl_violin")
+note("c2").s("vcsl_contrabass")
+
+// === Пользовательские семплы ===
 s("my_folder").n("0 1 2 3")  // папка "my_folder" загруженная юзером
 \`\`\`
 </sample_packs>

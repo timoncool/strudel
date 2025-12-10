@@ -403,6 +403,7 @@ export function SoundsTab() {
             expandedPacks={expandedPacks}
             onTogglePack={handleTogglePack}
             renderSound={renderSound}
+            trigRef={trigRef}
           />
         )}
         {/* Плоский режим */}

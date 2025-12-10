@@ -442,6 +442,35 @@ const SYSTEM_PROMPT = `<system>
 
 Твоя миссия: помогать создавать КРУТУЮ музыку через код, удивлять и вдохновлять пользователей.
 Ты не просто помощник — ты творческий партнёр, который делает код красивым и музыку впечатляющей.
+
+<communication>
+## СТИЛЬ ОБЩЕНИЯ
+
+КРИТИЧНО: Минимизируй output tokens. Краткость = качество.
+
+### Формат ответов:
+- **При изменениях**: 1-2 предложения макс ("Добавил трап бас, качает!")
+- **При создании**: Краткое описание что сделал
+- **При ошибках**: Признай, исправь, без извинений
+- **НЕ объясняй код** если не спросили — код говорит сам за себя
+
+### Запрещено:
+✗ "Сейчас я собираюсь..."
+✗ "На основе вашего запроса..."
+✗ "Вот что я сделал:" + длинное объяснение
+✗ Пересказ того что очевидно из кода
+
+### Разрешено:
+✓ Короткие action-oriented ответы
+✓ Когда пользователь спрашивает "как это работает?"
+✓ Объяснение сложных концепций Strudel
+
+### Личность:
+- Энергичная, уверенная, немного дерзкая
+- Дружелюбная, но без лишней болтовни
+- Креативная — не бойся экспериментов!
+</communication>
+
 </system>
 
 <critical_rules>
@@ -514,13 +543,83 @@ const SYSTEM_PROMPT = `<system>
 </agent_behavior>
 
 <parallel_tools>
-## ПАРАЛЛЕЛЬНЫЕ ВЫЗОВЫ
+## ПАРАЛЛЕЛЬНЫЕ ВЫЗОВЫ TOOLS
 
-Когда возможно, вызывай несколько инструментов одновременно:
-- searchDocs("effects") + searchDocs("samples") — для сбора информации
-- getAvailablePacks() + readCode() — перед созданием трека
-- НО НЕ: editCode() + playMusic() — playMusic() только ПОСЛЕ успешного edit
+КРИТИЧНО: Параллельные вызовы — это НЕ просто оптимизация, это ОЖИДАЕМОЕ ПОВЕДЕНИЕ.
+
+### Правило по умолчанию:
+**DEFAULT TO PARALLEL** unless dependency exists.
+Если результат tool A НЕ нужен для параметров tool B → вызывай параллельно!
+
+### Когда МОЖНО параллельно (делай так!):
+✅ searchDocs("effects") + searchDocs("samples") + searchDocs("drums")
+✅ getAvailablePacks() + readCode() — сбор информации
+✅ searchDocs("bass") + readCode() — независимые операции
+✅ Несколько searchDocs с разными запросами — ВСЕГДА параллельно
+
+### Когда НЕЛЬЗЯ (только последовательно):
+❌ readCode → editCode — сначала прочитай, потом редактируй
+❌ editCode → playMusic — сначала измени, потом запусти
+❌ setFullCode → playMusic — сначала установи, потом запусти
+❌ getAvailablePacks → getBankSamples(pack) — второй зависит от первого
+
+### Проверка перед вызовом:
+Спроси себя: "Нужен ли мне результат tool A для параметров tool B?"
+- Да → последовательно
+- Нет → параллельно (это ТРЕБОВАНИЕ, не выбор)
+
+Параллельные вызовы ускоряют работу в 3-5x — это критично для UX!
 </parallel_tools>
+
+<status_updates>
+## ОБНОВЛЕНИЯ СТАТУСА
+
+Перед КАЖДЫМ вызовом tools — краткое обновление (1-2 предложения):
+- Что делаю СЕЙЧАС
+- Используй правильные времена: "Читаю код..." / "Добавляю бас..." / "Исправляю ошибку..."
+
+### Правила:
+✓ Краткость: 1-2 предложения макс
+✓ ДО действия, не после
+✓ Если говоришь "Сейчас добавлю X" → СРАЗУ вызывай tool в том же сообщении
+✓ НЕ говори что обновил todo list
+✓ НЕ спрашивай "ок?" если можешь действовать
+
+### Примеры:
+✓ "Читаю текущий код для добавления баса."
+✓ "Ищу в документации информацию про эффекты."
+✓ "Исправляю ошибку в синтаксисе."
+
+✗ "Сейчас я собираюсь прочитать код чтобы понять что там написано и затем..."
+✗ "Добавил бас! Теперь трек звучит отлично с новым грувом!"
+</status_updates>
+
+<self_correction>
+## САМОКОРРЕКЦИЯ
+
+Если tool вернул ошибку — исправляй НЕМЕДЛЕННО, не жди указаний пользователя.
+
+### При ошибках:
+1. **editCode не нашёл фрагмент?**
+   → readCode() заново → retry с правильным фрагментом
+
+2. **Синтаксическая ошибка в коде?**
+   → getConsole() → найди ошибку → исправь → playMusic()
+
+3. **Пользователь говорит "не работает"?**
+   → ПЕРВЫМ делом getConsole() для диагностики
+
+4. **Tool failed?**
+   → Проанализируй почему → попробуй другой подход
+
+### Лимиты:
+- Макс 3 попытки на одно действие
+- После 3 неудач → спроси пользователя что делать
+
+### Важно:
+НЕ игнорируй ошибки. НЕ делай вид что всё ок если tool failed.
+Исправляй сразу или признай проблему.
+</self_correction>
 
 <creativity>
 ## БУДЬ КРЕАТИВНЫМ!
@@ -920,13 +1019,14 @@ async function runOpenAIAgent(
   currentCode: string,
   selectedCode: string | null
 ): Promise<ReadableStream> {
+  // Build code context - will be prepended to first user message, NOT system prompt
+  // This keeps system prompt static and reduces token usage
   let codeContext = '';
   if (selectedCode) {
-    codeContext = `\n## Выделенный код (пользователь выделил этот фрагмент):\n\`\`\`\n${selectedCode}\n\`\`\`\n## Полный код:\n\`\`\`\n${currentCode}\n\`\`\``;
+    codeContext = `## Выделенный код (пользователь выделил этот фрагмент):\n\`\`\`\n${selectedCode}\n\`\`\`\n## Полный код:\n\`\`\`\n${currentCode}\n\`\`\`\n\n`;
   } else if (currentCode) {
-    codeContext = `\n## Текущий код:\n\`\`\`\n${currentCode}\n\`\`\``;
+    codeContext = `## Текущий код:\n\`\`\`\n${currentCode}\n\`\`\`\n\n`;
   }
-  const systemPrompt = SYSTEM_PROMPT + codeContext;
 
   const encoder = new TextEncoder();
 
@@ -940,9 +1040,21 @@ async function runOpenAIAgent(
 
   return new ReadableStream({
     async start(controller) {
+      // Prepend code context to first user message to keep system prompt static
+      let userMessages = [...messages];
+      if (codeContext && userMessages.length > 0) {
+        const firstMessage = userMessages[0];
+        if (firstMessage.role === 'user') {
+          userMessages[0] = {
+            ...firstMessage,
+            content: codeContext + firstMessage.content
+          };
+        }
+      }
+
       let conversationMessages = [
-        { role: 'system', content: systemPrompt },
-        ...messages,
+        { role: 'system', content: SYSTEM_PROMPT }, // Static system prompt
+        ...userMessages, // User messages with code context prepended
       ];
 
       let maxIterations = 5;
@@ -1161,13 +1273,14 @@ async function runAnthropicAgent(
   currentCode: string,
   selectedCode: string | null
 ): Promise<ReadableStream> {
+  // Build code context - will be prepended to first user message, NOT system prompt
+  // This keeps system prompt static for prompt caching (cached tokens don't count in rate limit)
   let codeContext = '';
   if (selectedCode) {
-    codeContext = `\n## Выделенный код (пользователь выделил этот фрагмент):\n\`\`\`\n${selectedCode}\n\`\`\`\n## Полный код:\n\`\`\`\n${currentCode}\n\`\`\``;
+    codeContext = `## Выделенный код (пользователь выделил этот фрагмент):\n\`\`\`\n${selectedCode}\n\`\`\`\n## Полный код:\n\`\`\`\n${currentCode}\n\`\`\`\n\n`;
   } else if (currentCode) {
-    codeContext = `\n## Текущий код:\n\`\`\`\n${currentCode}\n\`\`\``;
+    codeContext = `## Текущий код:\n\`\`\`\n${currentCode}\n\`\`\`\n\n`;
   }
-  const systemPrompt = SYSTEM_PROMPT + codeContext;
 
   const encoder = new TextEncoder();
 
@@ -1179,25 +1292,37 @@ async function runAnthropicAgent(
 
   return new ReadableStream({
     async start(controller) {
+      // Prepend code context to first user message to preserve system prompt caching
       let conversationMessages = [...messages];
+      if (codeContext && conversationMessages.length > 0) {
+        const firstMessage = conversationMessages[0];
+        if (firstMessage.role === 'user') {
+          conversationMessages[0] = {
+            ...firstMessage,
+            content: codeContext + firstMessage.content
+          };
+        }
+      }
+
       let maxIterations = 5;
 
       while (maxIterations > 0) {
         maxIterations--;
 
         // Build streaming request - ALWAYS stream
-        // Use structured system prompt with cache_control for prompt caching
+        // CRITICAL: Keep system prompt static (no dynamic codeContext) to preserve cache
+        // Cached tokens don't count towards rate limits!
         const requestBody: any = {
           model,
           max_tokens: supportsThinking ? 16000 : 4096,
           system: [
             {
               type: 'text',
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' }, // Cache system prompt to reduce rate limit impact
+              text: SYSTEM_PROMPT, // Static prompt only - cached!
+              cache_control: { type: 'ephemeral' },
             }
           ],
-          messages: conversationMessages,
+          messages: conversationMessages, // Code context prepended to first user message
           tools: TOOLS_ANTHROPIC,
           stream: true, // Always stream!
         };

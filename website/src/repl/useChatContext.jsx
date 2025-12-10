@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSettings } from '../settings.mjs';
+import { soundMap } from '@strudel/webaudio';
 
 const CHAT_STORAGE_KEY = 'bulka-chat-messages';
 
@@ -408,6 +409,55 @@ export function useChatContext(replContext) {
             } else {
               setLastAction('⚠ Фрагмент не найден');
               actionsExecuted.push('Фрагмент не найден');
+            }
+          }
+          // getAvailablePacks - получить список всех паков
+          else if (name === 'getAvailablePacks') {
+            const sounds = soundMap.get();
+            const packs = {};
+            Object.entries(sounds || {})
+              .filter(([key]) => !key.startsWith('_'))
+              .forEach(([soundName, { data }]) => {
+                const pack = data?.pack || 'other';
+                if (!packs[pack]) {
+                  packs[pack] = { banks: [], type: data?.type || 'sample', tag: data?.tag };
+                }
+                packs[pack].banks.push(soundName);
+              });
+            // Формируем читаемый ответ для агента
+            const packsList = Object.entries(packs)
+              .map(([name, info]) => `• ${name}: ${info.banks.length} банков (${info.type}${info.tag ? ', ' + info.tag : ''})`)
+              .join('\n');
+            setLastAction(`📦 Найдено ${Object.keys(packs).length} паков`);
+            actionsExecuted.push(`Паки: ${Object.keys(packs).join(', ')}`);
+            // Store pack info for agent context
+            message.packResult = packsList;
+          }
+          // getBankSamples - получить содержимое конкретного банка
+          else if (name === 'getBankSamples' && args?.bankName) {
+            const sounds = soundMap.get();
+            const bankData = sounds?.[args.bankName];
+            if (bankData?.data) {
+              const { data } = bankData;
+              let samplesInfo = '';
+              if (data.type === 'sample' && data.samples) {
+                const samplesList = Array.isArray(data.samples) ? data.samples : Object.values(data.samples).flat();
+                samplesInfo = `Банк "${args.bankName}" (${data.pack || 'unknown'}):\n`;
+                samplesInfo += `Тип: ${data.type}\n`;
+                samplesInfo += `Семплов: ${samplesList.length}\n`;
+                samplesInfo += `Файлы:\n${samplesList.slice(0, 20).map((s, i) => `  ${i}: ${s}`).join('\n')}`;
+                if (samplesList.length > 20) {
+                  samplesInfo += `\n  ... и ещё ${samplesList.length - 20} файлов`;
+                }
+              } else {
+                samplesInfo = `Банк "${args.bankName}": тип ${data.type}, пак ${data.pack || 'unknown'}`;
+              }
+              setLastAction(`🎵 Банк ${args.bankName} найден`);
+              actionsExecuted.push(`Банк ${args.bankName}: ${data.samples?.length || 0} семплов`);
+              message.bankResult = samplesInfo;
+            } else {
+              setLastAction(`⚠ Банк ${args.bankName} не найден`);
+              actionsExecuted.push(`Банк ${args.bankName} не найден`);
             }
           }
         }

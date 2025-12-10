@@ -617,6 +617,312 @@ s("arpy*4").gain(sine.range(0.3, 1).slow(2))
     category: 'general',
     keywords: ['samples', 'банки', 'banks', 'packs', 'tools', 'getAvailablePacks', 'getBankSamples', 'ошибка', 'error'],
   },
+
+  // Wavetable Synthesis
+  {
+    id: 'wavetable-synthesis',
+    title: 'Wavetable синтез',
+    content: `Wavetable synthesis - синтез на основе wavetable осцилляторов.
+
+Позиция в wavetable:
+\`\`\`
+note("c3").s("bass")
+  .wt(0.3)              // позиция в wavetable (0-1)
+  .wtenv(0.5)           // envelope amount
+  .wtattack(0.01)       // attack
+  .wtdecay(0.2)         // decay
+  .wtsustain(0.7)       // sustain
+  .wtrelease(0.5)       // release
+\`\`\`
+
+LFO модуляция wavetable:
+\`\`\`
+note("c3").s("bass")
+  .wt(0.5)
+  .wtrate(4)            // частота LFO (Hz)
+  .wtdepth(0.3)         // глубина модуляции
+  .wtshape("sine")      // форма LFO
+\`\`\`
+
+Warp (деформация wavetable):
+\`\`\`
+note("c3").s("bass")
+  .warp(0.5)            // деформация (0-1)
+  .warpmode(2)          // режим деформации
+  .warpattack(0.01)
+  .warpdecay(0.2)
+  .warpsustain(0.5)
+  .warprelease(0.3)
+\`\`\`
+
+Комбинация:
+\`\`\`
+note("c3 e3 g3").s("bass")
+  .wt(sine.range(0.2, 0.8).slow(4))
+  .warp(0.3)
+  .lpf(1000)
+\`\`\``,
+    category: 'sounds',
+    keywords: ['wavetable', 'wt', 'warp', 'oscillator', 'синтез', 'wtenv', 'wtattack', 'wtrate', 'wtdepth'],
+  },
+
+  // FM Synthesis
+  {
+    id: 'fm-synthesis',
+    title: 'FM синтез',
+    content: `FM (Frequency Modulation) synthesis - 8 операторов.
+
+Базовый FM:
+\`\`\`
+note("c3").s("sine")
+  .fm(2, 3)             // гармоника 2, индекс 3
+\`\`\`
+
+Отдельные операторы (fm1-fm8):
+\`\`\`
+note("c3").s("sine")
+  .fm1(1, 2)            // оператор 1
+  .fm2(2, 1.5)          // оператор 2
+  .fm3(3, 0.5)          // оператор 3
+\`\`\`
+
+Управление FM:
+\`\`\`
+note("c3").s("sine")
+  .fmh(2)               // гармоника (harmonic)
+  .fmi(3)               // индекс модуляции
+  .fmenv(5)             // envelope amount
+  .fmattack(0.01)
+  .fmdecay(0.2)
+  .fmsustain(0.5)
+  .fmrelease(0.3)
+\`\`\`
+
+Сложный FM тембр:
+\`\`\`
+note("c2 e2 g2").s("sine")
+  .fm1(1, 4)
+  .fm2(2, 2)
+  .fm3(3, 1)
+  .fmenv(8)
+  .lpf(2000)
+\`\`\``,
+    category: 'sounds',
+    keywords: ['fm', 'fm synthesis', 'frequency modulation', 'fmh', 'fmi', 'fmenv', 'operator', 'оператор'],
+  },
+
+  // Advanced Pattern Functions
+  {
+    id: 'advanced-patterns',
+    title: 'Продвинутые функции паттернов',
+    content: `Продвинутые модификаторы паттернов:
+
+Euclidean rhythms:
+\`\`\`
+s("bd").euclidLegacy(3, 8)        // 3 удара на 8 шагов
+s("sd").euclidLegacy(5, 16, 2)    // со смещением 2
+\`\`\`
+
+Iter (вращение паттерна):
+\`\`\`
+s("bd sd hh cp").iter(4)          // вращение каждый цикл
+\`\`\`
+
+Chop (нарезка семпла):
+\`\`\`
+s("amen").chop(8)                 // нарезать на 8 частей
+s("amen").chop(16).rev()          // реверс нарезки
+\`\`\`
+
+Slice (выбор кусочков):
+\`\`\`
+s("amen").slice(8, "0 1 2 3")     // выбрать кусочки
+\`\`\`
+
+Striate (гранулярный):
+\`\`\`
+s("pad").striate(8)               // гранулярная нарезка
+\`\`\`
+
+Segment (деление на сегменты):
+\`\`\`
+note("c4 e4 g4").segment(8)       // разбить на 8 событий
+\`\`\`
+
+Shuffle (перемешать):
+\`\`\`
+s("bd sd hh cp").shuffle(4)       // случайный порядок
+\`\`\`
+
+Palindrome (туда-обратно):
+\`\`\`
+s("bd sd hh cp").palindrome()     // bd sd hh cp hh sd
+\`\`\``,
+    category: 'functions',
+    keywords: ['euclidean', 'iter', 'chop', 'slice', 'striate', 'segment', 'shuffle', 'palindrome', 'продвинутые'],
+  },
+
+  // Time Modifiers
+  {
+    id: 'time-modifiers',
+    title: 'Модификаторы времени',
+    content: `Продвинутые функции работы со временем:
+
+Early/Late (смещение):
+\`\`\`
+s("bd sd").early(0.1)             // раньше на 0.1 цикла
+s("hh*8").late(0.05)              // позже на 0.05
+\`\`\`
+
+Hurry (ускорение с pitch):
+\`\`\`
+s("bd sd hh cp").hurry(2)         // быстрее + выше
+s("arpy*4").hurry(0.5)            // медленнее + ниже
+\`\`\`
+
+Compress (сжатие в часть цикла):
+\`\`\`
+s("bd sd hh cp").compress(0, 0.5) // в первую половину
+s("arpy*4").compress(0.5, 1)      // во вторую половину
+\`\`\`
+
+Inside (выполнить в части цикла):
+\`\`\`
+s("bd sd").inside(2, rev)         // реверс в каждой половине
+\`\`\`
+
+Outside (выполнить на N циклах):
+\`\`\`
+s("bd sd").outside(4, fast(2))    // fast каждые 4 цикла
+\`\`\`
+
+Linger (задержка):
+\`\`\`
+s("bd sd hh cp").linger(0.25)     // каждый звук длится дольше
+\`\`\`
+
+Swing:
+\`\`\`
+s("hh*8").swingBy(0.1)            // свинг
+\`\`\``,
+    category: 'functions',
+    keywords: ['early', 'late', 'hurry', 'compress', 'inside', 'outside', 'linger', 'swing', 'время', 'time'],
+  },
+
+  // Filter Envelopes
+  {
+    id: 'filter-envelopes',
+    title: 'Фильтровые огибающие',
+    content: `Детальное управление фильтрами через ADSR огибающие:
+
+LP Filter Envelope:
+\`\`\`
+note("c2").s("sawtooth")
+  .lpf(100)               // стартовая частота
+  .lpenv(6)               // глубина огибающей (октавы)
+  .lpattack(0.01)         // атака фильтра
+  .lpdecay(0.2)           // затухание
+  .lpsustain(0.3)         // уровень sustain
+  .lprelease(0.5)         // релиз
+\`\`\`
+
+HP Filter Envelope:
+\`\`\`
+s("noise")
+  .hpf(2000)
+  .hpenv(3)
+  .hpattack(0.1)
+  .hpdecay(0.3)
+  .hpsustain(0.5)
+  .hprelease(0.4)
+\`\`\`
+
+BP Filter Envelope:
+\`\`\`
+s("white")
+  .bpf(1000)
+  .bpenv(4)
+  .bpattack(0.01)
+  .bpdecay(0.2)
+  .bpsustain(0.6)
+  .bprelease(0.3)
+\`\`\`
+
+Filter LFO:
+\`\`\`
+note("c3").s("sawtooth")
+  .lpf(500)
+  .lprate(4)              // частота LFO (Hz)
+  .lpdepth(0.5)           // глубина модуляции
+  .lpshape("sine")        // форма LFO
+  .lpdc(0.5)              // DC offset
+\`\`\``,
+    category: 'effects',
+    keywords: ['lpenv', 'hpenv', 'bpenv', 'filter envelope', 'огибающая', 'lpattack', 'lpdecay', 'lprate', 'lpdepth'],
+  },
+
+  // Arrangement
+  {
+    id: 'arrangement',
+    title: 'Аранжировка треков',
+    content: `Создание полной композиции с секциями:
+
+Базовый arrange:
+\`\`\`
+const intro = s("bd sd").room(0.5);
+const verse = stack(
+  s("bd ~ bd ~"),
+  s("~ sd ~ sd"),
+  s("hh*8")
+);
+const chorus = verse.fast(2).room(0.3);
+
+arrange([
+  [4, intro],             // 4 цикла intro
+  [8, verse],             // 8 циклов verse
+  [8, chorus],            // 8 циклов chorus
+  [4, intro]              // 4 цикла outro
+]);
+\`\`\`
+
+С прогрессией:
+\`\`\`
+cpm(120/2);
+
+const progression = chord("<Em C Am D>");
+
+const drums = stack(
+  s("bd sd bd sd"),
+  s("hh*8").gain(0.6)
+);
+
+const bass = progression
+  .rootNotes(2)
+  .s("sawtooth")
+  .lpf(400);
+
+const melody = n("<4 2 5 3>")
+  .set(progression)
+  .voicing()
+  .add(12)
+  .s("piano");
+
+const intro = drums;
+const verse = stack(drums, bass);
+const chorus = stack(drums, bass, melody);
+
+arrange([
+  [4, intro],
+  [8, verse],
+  [8, chorus],
+  [8, verse],
+  [8, chorus],
+  [4, intro]
+]);
+\`\`\``,
+    category: 'examples',
+    keywords: ['arrange', 'arrangement', 'аранжировка', 'structure', 'структура', 'song', 'композиция'],
+  },
 ];
 
 /**

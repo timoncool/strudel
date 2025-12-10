@@ -424,10 +424,21 @@ export function useChatContext(replContext) {
                 }
                 packs[pack].banks.push(soundName);
               });
-            // Формируем читаемый ответ для агента
+            // Формируем читаемый ответ для агента с названиями банков
             const packsList = Object.entries(packs)
-              .map(([name, info]) => `• ${name}: ${info.banks.length} банков (${info.type}${info.tag ? ', ' + info.tag : ''})`)
-              .join('\n');
+              .map(([packName, info]) => {
+                const bankNames = info.banks.sort();
+                // Для небольших паков (до 30 банков) показываем все названия
+                // Для больших - только первые 10 + счётчик
+                let banksStr;
+                if (bankNames.length <= 30) {
+                  banksStr = bankNames.join(', ');
+                } else {
+                  banksStr = bankNames.slice(0, 10).join(', ') + `, ... и ещё ${bankNames.length - 10}`;
+                }
+                return `• ${packName} (${info.banks.length} банков, ${info.type}${info.tag ? ', ' + info.tag : ''}):\n  Банки: ${banksStr}`;
+              })
+              .join('\n\n');
             setLastAction(`📦 Найдено ${Object.keys(packs).length} паков`);
             actionsExecuted.push(`Паки: ${Object.keys(packs).join(', ')}`);
             // Store pack info for agent context

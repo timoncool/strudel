@@ -30,7 +30,7 @@ export const KNOWN_LANGUAGE_CODES = Object.values(KNOWN_LANGUAGES);
 
 export const GITHUB_EDIT_URL = `https://github.com/timoncool/Bulka/tree/main/website`;
 
-export const COMMUNITY_INVITE_URL = `https://discord.com/invite/HGEdXmRkzT`;
+export const COMMUNITY_INVITE_URL = `https://t.me/bulka_app`;
 
 // See "Algolia" section of the README for more information.
 export const ALGOLIA = {

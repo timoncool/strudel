@@ -33,7 +33,17 @@ export function WelcomeTab({ context }) {
         <a href="https://github.com/timoncool/Bulka" target="_blank">
           GitHub
         </a>
-        .
+        . Присоединяйтесь к нашему{' '}
+        <a href="https://t.me/bulka_app" target="_blank">
+          Telegram-сообществу
+        </a>
+        !
+      </p>
+      <p>
+        🌐 Официальный сайт:{' '}
+        <a href="https://bulka.app/" target="_blank">
+          bulka.app
+        </a>
       </p>
       <p>
         Проект развивается{' '}

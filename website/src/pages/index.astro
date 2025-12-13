@@ -82,7 +82,7 @@ const canonicalUrl = url.origin + url.pathname + (hash ? '?' + hash : '');
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Bulka" />
-    <meta property="og:image" content={url.origin + "/icon.png"} />
+    <meta property="og:image" content={url.origin + "/og-image.png"} />
     {trackTitle && <meta property="og:audio:title" content={trackTitle} />}
     {trackArtist && <meta property="og:audio:artist" content={trackArtist} />}
 
@@ -91,7 +91,7 @@ const canonicalUrl = url.origin + url.pathname + (hash ? '?' + hash : '');
     <meta name="twitter:url" content={canonicalUrl} />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={url.origin + "/icon.png"} />
+    <meta name="twitter:image" content={url.origin + "/og-image.png"} />
   </head>
   <body class="h-app-height bg-background m-0">
     <Repl client:only="react" />

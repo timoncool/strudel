@@ -6,7 +6,7 @@ export const SITE = {
 
 export const OPEN_GRAPH = {
   image: {
-    src: 'https://strudel.cc/icon.png',
+    src: '/icon.png',
     alt: 'Bulka Logo',
   },
 };

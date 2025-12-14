@@ -1,27 +1,4 @@
 export const examples = [
-  `// "hydra dreams" @by bulka
-// @license CC BY-NC-SA
-// Пример использования изображения в Hydra визуализации
-await initHydra()
-
-// Загружаем изображение как источник
-s0.initImage("https://upload.wikimedia.org/wikipedia/commons/2/25/Hydra-Foto.jpg")
-
-// Визуализация с изображением
-src(s0)
-  .pixelate(H("20 40 60 80"), H("15 30 45 60"))
-  .modulate(osc(3, 0.1, 0.5), H("0.1 0.2 0.3"))
-  .kaleid(H("<3 4 5 6>"))
-  .colorama(H("0.1 0.3 0.5"))
-  .out()
-
-// Ambient музыка
-note("[c3 eb3 g3 bb3]/4")
-  .s("sawtooth")
-  .lpf(sine.range(300, 800).slow(8))
-  .lpq(4)
-  .room(0.8)
-  .delay(0.5)`,
   `// "coastline" @by eddyflux
 // @version 1.0
 samples('github:eddyflux/crate')

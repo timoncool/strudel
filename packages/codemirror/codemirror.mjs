@@ -14,7 +14,6 @@ import {
 import { persistentAtom } from '@nanostores/persistent';
 import { logger, registerControl, repl } from '@strudel/core';
 import { cleanupDraw, Drawer } from '@strudel/draw';
-import { clearHydra } from '@strudel/hydra';
 
 import { isAutoCompletionEnabled } from './autocomplete.mjs';
 import { basicSetup } from './basicSetup.mjs';
@@ -178,8 +177,6 @@ export class StrudelMirror {
       onToggle: (started) => {
         replOptions?.onToggle?.(started);
         if (started) {
-          // Clear previous Hydra visualization before starting new track
-          clearHydra();
           this.drawer.start(this.repl.scheduler);
           if (this.solo) {
             // stop other repls when this one is started

@@ -9,6 +9,7 @@ import { prebake } from '../repl/prebake.mjs';
 import { loadModules, setVersionDefaultsFrom } from '../repl/util.mjs';
 import Claviature from '@components/Claviature';
 import useClient from '@src/useClient.mjs';
+import { clearHydra } from '@strudel/hydra';
 
 let prebaked, modulesLoading, audioReady;
 if (typeof window !== 'undefined') {
@@ -80,8 +81,9 @@ export function MiniRepl({
         setReplState({ ...state });
       },
       onToggle: (playing) => {
-        if (!playing) {
-          // clearHydra(); // TBD: doesn't work with multiple MiniRepl's on a page
+        if (playing) {
+          // Clear previous Hydra before starting new track
+          clearHydra();
         }
       },
       beforeStart: () => audioReady,

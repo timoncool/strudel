@@ -24,6 +24,7 @@ function ResizeHandle({ direction, onResize }) {
     if (!isDragging.current) return;
     const currentPos = isHorizontal ? e.clientY : e.clientX;
     const delta = startPos.current - currentPos;
+    startPos.current = currentPos; // Update for next frame
     onResize?.(delta);
   }, [isHorizontal, onResize]);
 

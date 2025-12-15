@@ -8,12 +8,14 @@
 import type { APIRoute } from 'astro';
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 export const prerender = false;
 
-// Use process.cwd() for Vercel serverless (NOT __dirname!)
-// See: https://vercel.com/guides/how-can-i-use-files-in-serverless-functions
-const DOCS_PATH = path.join(process.cwd(), 'src', 'pages');
+// Use import.meta.url for correct path resolution in Vercel serverless
+// This resolves to src/pages/ (parent of api/ where this file is)
+// See: https://github.com/withastro/astro/issues/8402
+const DOCS_PATH = fileURLToPath(new URL('..', import.meta.url));
 
 /**
  * Code examples library - loaded on demand via getExamples tool

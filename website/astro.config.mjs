@@ -9,7 +9,7 @@ import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
 import vercel from '@astrojs/vercel';
 import { execSync } from 'child_process';
 import fs from 'fs';
-import { glob } from 'glob';
+import path from 'path';
 
 import tailwind from '@astrojs/tailwind';
 import AstroPWA from '@vite-pwa/astro';
@@ -31,7 +31,19 @@ const APP_VERSION = GIT_COMMIT;
 console.log(`📦 Building Bulka ${GIT_COMMIT}`);
 
 // Get all MDX files for RAG search (includeFiles doesn't support globs)
-const mdxFiles = glob.sync('./src/pages/**/*.mdx');
+function getMdxFiles(dir, files = []) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && entry.name !== 'api') {
+      getMdxFiles(fullPath, files);
+    } else if (entry.name.endsWith('.mdx')) {
+      files.push('./' + fullPath);
+    }
+  }
+  return files;
+}
+const mdxFiles = getMdxFiles('src/pages');
 console.log(`📚 Found ${mdxFiles.length} MDX files for RAG`);
 
 const site = `https://strudel.cc/`; // root url without a path

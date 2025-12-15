@@ -4,43 +4,42 @@ import { Code } from '@src/repl/components/Code';
 import UserFacingErrorMessage from '@src/repl/components/UserFacingErrorMessage';
 import { Header } from './Header';
 import { useSettings, settingsMap } from '@src/settings.mjs';
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
 
 // Resize handle component
-function ResizeHandle({ direction, onResize }) {
+function ResizeHandle({ direction, containerRef, settingKey }) {
   const isHorizontal = direction === 'horizontal';
   const isDragging = useRef(false);
-  const startPos = useRef(0);
 
-  const handlePointerDown = useCallback((e) => {
+  const handlePointerDown = (e) => {
     isDragging.current = true;
-    startPos.current = isHorizontal ? e.clientY : e.clientX;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    document.body.style.cursor = isHorizontal ? 'row-resize' : 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [isHorizontal]);
+    e.target.setPointerCapture(e.pointerId);
+  };
 
-  const handlePointerMove = useCallback((e) => {
-    if (!isDragging.current) return;
-    const currentPos = isHorizontal ? e.clientY : e.clientX;
-    const delta = startPos.current - currentPos;
-    onResize?.(delta);
-  }, [isHorizontal, onResize]);
+  const handlePointerMove = (e) => {
+    if (!isDragging.current || !containerRef.current) return;
 
-  const handlePointerUp = useCallback((e) => {
+    const container = containerRef.current;
+    const size = isHorizontal ? container.offsetHeight : container.offsetWidth;
+    const movement = isHorizontal ? -e.movementY : -e.movementX;
+    const deltaPercent = (movement / size) * 100;
+
+    const currentSize = Number(settingsMap.get()[settingKey]) || (isHorizontal ? 35 : 30);
+    const newSize = Math.max(5, Math.min(85, currentSize + deltaPercent));
+    settingsMap.setKey(settingKey, newSize);
+  };
+
+  const handlePointerUp = (e) => {
     isDragging.current = false;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  }, []);
+    e.target.releasePointerCapture(e.pointerId);
+  };
 
   return (
     <div
       className={`
         group flex items-center justify-center shrink-0
         ${isHorizontal ? 'h-2 cursor-row-resize w-full' : 'w-2 cursor-col-resize h-full'}
-        bg-transparent hover:bg-foreground/10 active:bg-foreground/20
-        transition-colors duration-150
+        hover:bg-foreground/10 active:bg-foreground/20
       `}
       style={{ touchAction: 'none' }}
       onPointerDown={handlePointerDown}
@@ -50,8 +49,8 @@ function ResizeHandle({ direction, onResize }) {
       <div
         className={`
           ${isHorizontal ? 'w-12 h-1' : 'w-1 h-12'}
-          bg-foreground/20 group-hover:bg-foreground/40 group-active:bg-foreground/60
-          rounded-full transition-colors duration-150
+          bg-foreground/20 group-hover:bg-foreground/40
+          rounded-full
         `}
       />
     </div>
@@ -66,56 +65,30 @@ export default function ReplEditor(Props) {
 
   const containerElRef = useRef(null);
 
-  // Handle resize for right panel (width in %)
-  const handleResizeRight = useCallback((delta) => {
-    if (!containerElRef.current) return;
-    const containerWidth = containerElRef.current.offsetWidth;
-    const deltaPercent = (delta / containerWidth) * 100;
-    const newSize = Math.max(15, Math.min(60, panelSizeRight + deltaPercent));
-    settingsMap.setKey('panelSizeRight', newSize);
-  }, [panelSizeRight]);
-
-  // Handle resize for bottom panel (height in %)
-  const handleResizeBottom = useCallback((delta) => {
-    if (!containerElRef.current) return;
-    const containerHeight = containerElRef.current.offsetHeight;
-    const deltaPercent = (delta / containerHeight) * 100;
-    const newSize = Math.max(15, Math.min(60, panelSizeBottom + deltaPercent));
-    settingsMap.setKey('panelSizeBottom', newSize);
-  }, [panelSizeBottom]);
-
   const showRightPanel = !isZen && panelPosition === 'right';
   const showBottomPanel = !isZen && panelPosition === 'bottom';
 
-  // Code component is ALWAYS in the same DOM position - never moves between renders
   return (
     <div ref={containerElRef} className="h-full flex flex-col relative" {...editorProps}>
       <Loader active={pending} />
       <Header context={context} />
       <div className="grow flex relative overflow-hidden">
-        {/* Code is always the first child here - never changes position */}
         <Code containerRef={containerRef} editorRef={editorRef} init={init} />
         {showRightPanel && isPanelOpen && (
-          <ResizeHandle direction="vertical" onResize={handleResizeRight} />
+          <ResizeHandle direction="vertical" containerRef={containerElRef} settingKey="panelSizeRight" />
         )}
         {showRightPanel && (
-          <div
-            className="shrink-0 overflow-hidden h-full"
-            style={{ width: isPanelOpen ? `${panelSizeRight}%` : '48px' }}
-          >
+          <div className="shrink-0 overflow-hidden h-full" style={{ width: isPanelOpen ? `${panelSizeRight}%` : '48px' }}>
             <VerticalPanel context={context} />
           </div>
         )}
       </div>
       <UserFacingErrorMessage error={error} />
       {showBottomPanel && isPanelOpen && (
-        <ResizeHandle direction="horizontal" onResize={handleResizeBottom} />
+        <ResizeHandle direction="horizontal" containerRef={containerElRef} settingKey="panelSizeBottom" />
       )}
       {showBottomPanel && (
-        <div
-          className="shrink-0 overflow-hidden"
-          style={{ height: isPanelOpen ? `${panelSizeBottom}%` : '48px' }}
-        >
+        <div className="shrink-0 overflow-hidden" style={{ height: isPanelOpen ? `${panelSizeBottom}%` : '48px' }}>
           <HorizontalPanel context={context} />
         </div>
       )}

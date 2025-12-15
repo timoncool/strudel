@@ -7,6 +7,195 @@
         "type": "fix",
         "typeLabel": "Исправления",
         "emoji": "🐛",
+        "description": "pre-build docs index for RAG (all 70 MDX files)",
+        "scope": null,
+        "author": "Claude",
+        "hash": "87de120"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use built-in fs instead of glob for MDX file discovery",
+        "scope": null,
+        "author": "Claude",
+        "hash": "3c4c548"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use glob.sync to expand MDX files for includeFiles",
+        "scope": null,
+        "author": "Claude",
+        "hash": "e8d3096"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use process.cwd() for Vercel file access (confirmed by Astro team)",
+        "scope": null,
+        "author": "Claude",
+        "hash": "b39dd93"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use import.meta.url for Vercel serverless file paths",
+        "scope": null,
+        "author": "Claude",
+        "hash": "cda7497"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use process.cwd() for Vercel serverless file paths",
+        "scope": null,
+        "author": "Claude",
+        "hash": "9530dc8"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "RAG searches ALL MDX files recursively, not hardcoded paths",
+        "scope": null,
+        "author": "Claude",
+        "hash": "af47edd"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "include MDX files in Vercel serverless for RAG",
+        "scope": null,
+        "author": "Claude",
+        "hash": "2b5f245"
+      },
+      {
+        "type": "refactor",
+        "typeLabel": "Рефакторинг",
+        "emoji": "♻️",
+        "description": "remove duplicate docs_md, RAG now reads MDX directly",
+        "scope": null,
+        "author": "Claude",
+        "hash": "6ca55f1"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "sync Hydra docs to website/docs_md for RAG agent",
+        "scope": null,
+        "author": "Claude",
+        "hash": "220ee46"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "ChatTab takes full width/height in bottom panel",
+        "scope": null,
+        "author": "Claude",
+        "hash": "6c95d77"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "resize range 20-50%, API keys layout adapts to panel position",
+        "scope": null,
+        "author": "Claude",
+        "hash": "5da1c6f"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "increase resize range from 5% to 85%",
+        "scope": null,
+        "author": "Claude",
+        "hash": "842ff73"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "use e.movementX/Y for resize delta",
+        "scope": null,
+        "author": "Claude",
+        "hash": "4d06553"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "simplify resize - direct calculation from mouse position",
+        "scope": null,
+        "author": "Claude",
+        "hash": "634512c"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "store initial size at drag start to avoid stale state",
+        "scope": null,
+        "author": "Claude",
+        "hash": "02e2e1d"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "update startPos on each pointer move for smooth resize",
+        "scope": null,
+        "author": "Claude",
+        "hash": "ec853b2"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "keep Code component in stable DOM position for resize",
+        "scope": null,
+        "author": "Claude",
+        "hash": "27184ef"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "add key to PanelGroup to force remount on layout change",
+        "scope": null,
+        "author": "Claude",
+        "hash": "8e659be"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
+        "description": "simplify AI settings form layout, add number parsing for panel sizes",
+        "scope": null,
+        "author": "Claude",
+        "hash": "7d3044b"
+      },
+      {
+        "type": "feat",
+        "typeLabel": "Новые возможности",
+        "emoji": "✨",
+        "description": "resizable editor panels with localStorage persistence",
+        "scope": null,
+        "author": "Claude",
+        "hash": "6fae67c"
+      },
+      {
+        "type": "fix",
+        "typeLabel": "Исправления",
+        "emoji": "🐛",
         "description": "убрать примеры из tunes.mjs - оставить только в документации",
         "scope": null,
         "author": "Claude",

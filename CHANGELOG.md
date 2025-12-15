@@ -10,6 +10,7 @@
 
 ### ✨ Новые возможности
 
+- resizable editor panels with localStorage persistence (`6fae67c`)
 - добавить примеры Shabda и Freesound CDN (`aea5301`)
 - pre-commit hook для автообновления changelog (`9dbc62e5`)
 - добавить версию (git commit) в header документации (`eb04b0e1`)
@@ -66,6 +67,25 @@
 
 ### 🐛 Исправления
 
+- pre-build docs index for RAG (all 70 MDX files) (`87de120`)
+- use built-in fs instead of glob for MDX file discovery (`3c4c548`)
+- use glob.sync to expand MDX files for includeFiles (`e8d3096`)
+- use process.cwd() for Vercel file access (confirmed by Astro team) (`b39dd93`)
+- use import.meta.url for Vercel serverless file paths (`cda7497`)
+- use process.cwd() for Vercel serverless file paths (`9530dc8`)
+- RAG searches ALL MDX files recursively, not hardcoded paths (`af47edd`)
+- include MDX files in Vercel serverless for RAG (`2b5f245`)
+- sync Hydra docs to website/docs_md for RAG agent (`220ee46`)
+- ChatTab takes full width/height in bottom panel (`6c95d77`)
+- resize range 20-50%, API keys layout adapts to panel position (`5da1c6f`)
+- increase resize range from 5% to 85% (`842ff73`)
+- use e.movementX/Y for resize delta (`4d06553`)
+- simplify resize - direct calculation from mouse position (`634512c`)
+- store initial size at drag start to avoid stale state (`02e2e1d`)
+- update startPos on each pointer move for smooth resize (`ec853b2`)
+- keep Code component in stable DOM position for resize (`27184ef`)
+- add key to PanelGroup to force remount on layout change (`8e659be`)
+- simplify AI settings form layout, add number parsing for panel sizes (`7d3044b`)
 - убрать примеры из tunes.mjs - оставить только в документации (`566819c`)
 - заменить ForBiggerBlazes на friday.mp4 от MDN (`83ed7a4`)
 - заменить нерабочие URL видео на рабочие с CORS (`bc15ab1`)
@@ -156,6 +176,7 @@
 
 ### ♻️ Рефакторинг
 
+- remove duplicate docs_md, RAG now reads MDX directly (`6ca55f1`)
 - улучшение README и создание отдельной страницы скриншотов (`c5d4d3da`)
 - replace rigid structure with abstract music principles (`c88cdbe2`)
 - Simplify system prompt to ~1600 chars (`744f641e`)

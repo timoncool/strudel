@@ -56,6 +56,9 @@ export const defaultSettings = {
   isPanelPinned: false,
   isPanelOpen: true,
   togglePanelTrigger: 'click', //click | hover
+  // Panel sizes (in percentage for react-resizable-panels)
+  panelSizeBottom: 35, // % of height for bottom panel
+  panelSizeRight: 30, // % of width for right panel
   userPatterns: '{}',
   prebakeScript: '',
   audioEngineTarget: audioEngineTargets.webaudio,

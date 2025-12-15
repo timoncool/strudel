@@ -9,7 +9,7 @@ import { useLogger } from '../useLogger';
 import { WelcomeTab } from './WelcomeTab';
 import { PatternsTab } from './PatternsTab';
 import { ChatTab } from './ChatTab';
-import { ChevronLeftIcon, XMarkIcon } from '@heroicons/react/16/solid';
+import { ChevronLeftIcon, ChevronUpIcon, XMarkIcon } from '@heroicons/react/16/solid';
 
 const TAURI = typeof window !== 'undefined' && window.__TAURI__;
 
@@ -20,21 +20,35 @@ export function HorizontalPanel({ context }) {
   return (
     <PanelNav
       settings={settings}
-      className={cx(isPanelOpen ? `min-h-[360px] max-h-[360px]` : 'min-h-12 max-h-12', 'overflow-hidden flex flex-col')}
+      className={cx('h-full overflow-hidden flex flex-col')}
     >
-      {isPanelOpen && (
-        <div className="flex h-full overflow-auto pr-10 ">
-          <PanelContent context={context} tab={tab} />
-        </div>
+      {isPanelOpen ? (
+        <>
+          <div className="flex grow overflow-auto pr-10">
+            <PanelContent context={context} tab={tab} />
+          </div>
+
+          <div className="absolute right-4 top-4">
+            <PanelActionButton settings={settings} />
+          </div>
+
+          <div className="flex justify-between min-h-12 max-h-12 items-center shrink-0">
+            <Tabs setTab={setTab} tab={tab} />
+          </div>
+        </>
+      ) : (
+        <button
+          onClick={(e) => {
+            setIsPanelOpened(true);
+          }}
+          aria-label="открыть панель меню"
+          className={cx(
+            'flex flex-row hover:bg-lineBackground items-center cursor-pointer justify-center w-full h-full',
+          )}
+        >
+          <ChevronUpIcon className="text-foreground opacity-50 w-6 h-6" />
+        </button>
       )}
-
-      <div className="absolute right-4 pt-4">
-        <PanelActionButton settings={settings} />
-      </div>
-
-      <div className="flex  justify-between min-h-12 max-h-12 grid-cols-2 items-center">
-        <Tabs setTab={setTab} tab={tab} />
-      </div>
     </PanelNav>
   );
 }
@@ -46,16 +60,16 @@ export function VerticalPanel({ context }) {
   return (
     <PanelNav
       settings={settings}
-      className={cx(isPanelOpen ? `min-w-[min(600px,80vw)] max-w-[min(600px,80vw)]` : 'min-w-12 max-w-12')}
+      className={cx('h-full')}
     >
       {isPanelOpen ? (
         <div className={cx('flex flex-col h-full')}>
-          <div className="flex justify-between w-full ">
+          <div className="flex justify-between w-full shrink-0">
             <Tabs setTab={setTab} tab={tab} />
             <PanelActionButton settings={settings} />
           </div>
 
-          <div className="overflow-auto h-full">
+          <div className="overflow-auto grow">
             <PanelContent context={context} tab={tab} />
           </div>
         </div>
@@ -66,7 +80,7 @@ export function VerticalPanel({ context }) {
           }}
           aria-label="открыть панель меню"
           className={cx(
-            'flex flex-col hover:bg-lineBackground items-center cursor-pointer justify-center w-full  h-full',
+            'flex flex-col hover:bg-lineBackground items-center cursor-pointer justify-center w-full h-full',
           )}
         >
           <ChevronLeftIcon className="text-foreground opacity-50 w-6 h-6" />

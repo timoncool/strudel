@@ -79,7 +79,10 @@ const options = {
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    // Include MDX files for RAG search in API routes
+    includeFiles: ['./src/pages/**/*.mdx'],
+  }),
   integrations: [
     react(),
     mdx(options),

@@ -13,7 +13,8 @@ import { fileURLToPath } from 'url';
 export const prerender = false;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DOCS_PATH = path.resolve(__dirname, '../../../../docs_md');
+// Use MDX pages directly - no need for separate docs_md copies
+const DOCS_PATH = path.resolve(__dirname, '..');
 
 /**
  * Code examples library - loaded on demand via getExamples tool
@@ -322,16 +323,39 @@ const TOOLS_ANTHROPIC = TOOLS_OPENAI.map(t => ({
 }));
 
 /**
- * Search documentation
+ * Strip MDX-specific syntax (imports, JSX components) to get clean markdown
+ */
+function stripMdxSyntax(content: string): string {
+  return content
+    // Remove import statements
+    .replace(/^import\s+.*$/gm, '')
+    // Remove JSX components like <MiniRepl ... />
+    .replace(/<[A-Z][a-zA-Z]*\s+[\s\S]*?\/>/g, '')
+    // Remove JSX components with children <Component>...</Component>
+    .replace(/<[A-Z][a-zA-Z]*[^>]*>[\s\S]*?<\/[A-Z][a-zA-Z]*>/g, '')
+    // Remove frontmatter
+    .replace(/^---[\s\S]*?---\n/m, '')
+    // Clean up multiple empty lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Search documentation - reads MDX pages directly from website/src/pages/
  */
 async function searchDocumentation(query: string, maxResults: number = 5): Promise<string[]> {
   const results: { file: string; content: string; score: number }[] = [];
   const queryLower = query.toLowerCase();
   const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
 
+  // Search in all documentation directories (MDX pages)
   const searchPaths = [
-    path.join(DOCS_PATH, 'ru'),
-    path.join(DOCS_PATH, 'en'),
+    path.join(DOCS_PATH, 'hydra'),
+    path.join(DOCS_PATH, 'learn'),
+    path.join(DOCS_PATH, 'reference'),
+    path.join(DOCS_PATH, 'samples'),
+    path.join(DOCS_PATH, 'recipes'),
+    path.join(DOCS_PATH, 'functions'),
   ];
 
   for (const searchPath of searchPaths) {
@@ -360,9 +384,11 @@ async function searchDirectory(
 
       if (entry.isDirectory()) {
         await searchDirectory(fullPath, queryWords, queryLower, results);
-      } else if (entry.name.endsWith('.md')) {
+      } else if (entry.name.endsWith('.mdx') || entry.name.endsWith('.md')) {
         try {
-          const content = await fs.readFile(fullPath, 'utf-8');
+          const rawContent = await fs.readFile(fullPath, 'utf-8');
+          // Strip MDX syntax to get clean markdown for searching
+          const content = entry.name.endsWith('.mdx') ? stripMdxSyntax(rawContent) : rawContent;
           const contentLower = content.toLowerCase();
 
           let score = 0;
@@ -372,18 +398,24 @@ async function searchDirectory(
             score += Math.min(matches, 10);
           }
 
-          if (entry.name.includes('mini-notation')) score += 15;
-          if (entry.name.includes('effects')) score += 10;
-          if (entry.name.includes('sounds')) score += 10;
-          if (entry.name.includes('samples')) score += 10;
-          if (entry.name.includes('synth')) score += 8;
-          if (entry.name.includes('drum')) score += 8;
+          // Boost scores for relevant file names
+          const nameLower = entry.name.toLowerCase();
+          if (nameLower.includes('mini-notation')) score += 15;
+          if (nameLower.includes('effect')) score += 10;
+          if (nameLower.includes('sound')) score += 10;
+          if (nameLower.includes('sample')) score += 10;
+          if (nameLower.includes('synth')) score += 8;
+          if (nameLower.includes('drum')) score += 8;
+          if (nameLower.includes('hydra')) score += 8;
+          if (nameLower.includes('external')) score += 8;
+          if (nameLower.includes('source')) score += 5;
 
           if (score > 0) {
             const relevantContent = extractRelevantSection(content, queryWords, 2000);
+            const fileName = entry.name.replace(/\.(mdx?|md)$/, '');
             results.push({
               file: fullPath,
-              content: `## ${entry.name}\n${relevantContent}`,
+              content: `## ${fileName}\n${relevantContent}`,
               score,
             });
           }
@@ -393,32 +425,53 @@ async function searchDirectory(
   } catch (e) { }
 }
 
+/**
+ * Extract relevant sections from markdown content
+ * Uses header-based chunking (best practice for RAG with markdown)
+ */
 function extractRelevantSection(content: string, queryWords: string[], maxLength: number): string {
-  const lines = content.split('\n');
-  let bestStart = 0;
-  let bestScore = 0;
+  // Split content into sections by headers (## or ###)
+  const sections = content.split(/(?=^#{1,3}\s)/m).filter(s => s.trim());
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineLower = lines[i].toLowerCase();
+  // Score each section
+  const scoredSections = sections.map(section => {
+    const sectionLower = section.toLowerCase();
     let score = 0;
-    for (const word of queryWords) {
-      if (lineLower.includes(word)) score += 5;
-    }
-    if (lines[i].startsWith('#')) score += 3;
-    if (score > bestScore) {
-      bestScore = score;
-      bestStart = i;
-    }
-  }
 
-  const startLine = Math.max(0, bestStart - 5);
-  const section = lines.slice(startLine);
+    // Check for query matches
+    for (const word of queryWords) {
+      // Exact word match in header gets highest score
+      const headerMatch = section.match(/^#+\s+(.+)$/m);
+      if (headerMatch && headerMatch[1].toLowerCase().includes(word)) {
+        score += 15;
+      }
+      // Count matches in content
+      const matches = (sectionLower.match(new RegExp(word, 'g')) || []).length;
+      score += Math.min(matches * 2, 10);
+    }
+
+    // Boost sections with code examples (valuable for coding assistant)
+    if (section.includes('```')) score += 5;
+
+    return { section, score };
+  });
+
+  // Sort by score and take best sections until maxLength
+  scoredSections.sort((a, b) => b.score - a.score);
 
   let result = '';
-  for (const line of section) {
-    if (result.length + line.length > maxLength) break;
-    result += line + '\n';
+  for (const { section, score } of scoredSections) {
+    if (score === 0) break;
+    if (result.length + section.length > maxLength) {
+      // Try to fit at least partial content
+      if (result.length === 0) {
+        result = section.slice(0, maxLength);
+      }
+      break;
+    }
+    result += section + '\n\n';
   }
+
   return result.trim();
 }
 

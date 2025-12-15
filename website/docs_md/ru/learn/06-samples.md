@@ -308,8 +308,13 @@ Sampler всегда выберет ближайший подходящий samp
 
 ## Shabda
 
-Если вы не хотите выбирать samples вручную, есть также замечательный инструмент под названием [shabda](https://shabda.ndre.gr/).
-С его помощью вы можете ввести любое имя (имена) sample для запроса из [freesound.org](https://freesound.org/). Пример:
+[Shabda](https://shabda.ndre.gr/) — мощный инструмент для работы со звуками на лету. Он умеет:
+1. **Искать звуки** на [freesound.org](https://freesound.org/) по ключевым словам
+2. **Генерировать речь** на разных языках
+
+### Поиск звуков на Freesound
+
+Формат: `shabda:слово:количество,слово2:количество`
 
 ```javascript
 // Пример:
@@ -320,16 +325,97 @@ $: n("0 1*2 2 3*2").s('hihat').clip(1)
 $: n("~ 0 ~ 1 ~ 0 0 1").s('rimshot')
 ```
 
-Вы также можете генерировать искусственные голосовые samples с любым текстом на нескольких языках.
-Обратите внимание, что код языка и параметры пола являются необязательными и по умолчанию имеют значения `en-GB` и `f`
+```javascript
+// Пример: этническая перкуссия
+samples('shabda:tabla:3,djembe:2,shaker:4')
+s("tabla djembe shaker*2")
+```
 
 ```javascript
-// Пример:
+// Пример: звуковые эффекты
+samples('shabda:explosion:2,laser:3,whoosh:2')
+s("explosion laser whoosh").slow(2)
+```
+
+### Генерация речи (Text-to-Speech)
+
+Формат: `shabda/speech/ЯЗЫК/ПОЛ:слово1,слово2,слово3`
+
+- **Языки:** `ru-RU`, `en-US`, `en-GB`, `de-DE`, `fr-FR`, `ja-JP` и др.
+- **Пол:** `m` (мужской), `f` (женский)
+- По умолчанию: `en-GB` и `f`
+
+```javascript
+// Пример: русский мужской голос
+samples('shabda/speech/ru-RU/m:раз,два,три,четыре,бас,дроп')
+s("раз два три четыре").slow(2)
+```
+
+```javascript
+// Пример: английский + французский
 samples('shabda/speech:the_drum,forever')
 samples('shabda/speech/fr-FR/m:magnifique')
 
 $: s("the_drum*2").chop(16).speed(rand.range(0.85,1.1))
 $: s("forever magnifique").slow(4).late(0.125)
+```
+
+```javascript
+// Пример: голос как ритмический инструмент
+samples('shabda/speech/ru-RU/m:бум,тыщ,пам,дыщ')
+
+stack(
+  s("бум тыщ пам дыщ").fast(2),
+  s("bd sd bd sd").bank("RolandTR808")
+)
+```
+
+## Freesound CDN — конкретный звук
+
+Когда нужен **конкретный** звук (а не рандомный из поиска Shabda), можно загрузить его напрямую с Freesound CDN.
+
+### Как получить URL:
+
+1. Найди звук на [freesound.org](https://freesound.org/)
+2. Открой страницу звука
+3. Нажми `F12` → вкладка **Network** → фильтр `mp3`
+4. Нажми ▶️ Play — скопируй появившийся URL
+
+Или через исходный код страницы (`Ctrl+U`): найди `previews/` и добавь `https://cdn.freesound.org/`
+
+### Пример: тувинское горловое пение
+
+```javascript
+// Пример:
+samples({
+  throat: 'https://cdn.freesound.org/previews/318/318638_1038858-lq.mp3'
+})
+
+setcps(0.4)
+
+stack(
+  s("throat").loopAt(16).room(0.3),
+  s("bd*2, ~ sd, hh*8").bank("RolandTR808"),
+  s("tabla:0 tabla:2 ~ tabla:1").gain(0.5)
+)
+```
+
+### Другие примеры с Freesound CDN
+
+```javascript
+// Пример: калимба
+samples({
+  kalimba: { c5:'https://cdn.freesound.org/previews/536/536549_11935698-lq.mp3' }
+})
+note("c5 e5 g5 c6").s("kalimba")
+```
+
+```javascript
+// Пример: колокольчик
+samples({
+  bell: { c6: 'https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3' }
+})
+note("c6 e6 g6").s("bell").room(0.4)
 ```
 
 # Sampler Effects

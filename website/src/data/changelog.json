@@ -1,5 +1,29 @@
 [
   {
+    "date": "2025-12-16",
+    "dateFormatted": "16 декабря 2025",
+    "changes": [
+      {
+        "type": "feat",
+        "typeLabel": "Новое",
+        "emoji": "🆓",
+        "description": "GPT4Free интеграция — бесплатный AI-агент без API ключей",
+        "scope": "ai",
+        "author": "Claude",
+        "hash": null
+      },
+      {
+        "type": "docs",
+        "typeLabel": "Документация",
+        "emoji": "📝",
+        "description": "добавлена документация GPT4Free и статья в блог",
+        "scope": "website",
+        "author": "Claude",
+        "hash": null
+      }
+    ]
+  },
+  {
     "date": "2025-12-15",
     "dateFormatted": "15 декабря 2025",
     "changes": [

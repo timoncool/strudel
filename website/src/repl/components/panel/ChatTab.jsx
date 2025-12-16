@@ -2,23 +2,17 @@
  * ChatTab - AI Assistant Chat Interface
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import cx from '@src/cx.mjs';
 import ReactMarkdown from 'react-markdown';
 import { useChatContext } from '../../useChatContext';
 import { useSettings, setOpenaiApiKey, setAnthropicApiKey, setGeminiApiKey, setAiProvider, setAiModel, setGpt4freeSubProvider, getApiKeyForProvider } from '../../../settings.mjs';
+import { getRandomSuggestions } from '../../data/suggestions.js';
 
 // Common input styles matching SettingsTab
 const inputClass = 'w-full p-2 bg-background rounded-md text-foreground border border-foreground/30 focus:border-foreground focus:outline-none';
 const selectClass = 'w-full p-2 bg-background rounded-md text-foreground border border-foreground/30';
 const buttonClass = 'px-4 py-2 rounded-md bg-background text-foreground border border-foreground/30 hover:bg-lineBackground disabled:opacity-50';
-
-const SUGGESTIONS = [
-  { label: 'Простой бит', prompt: 'Создай простой бит с бочкой, снейром и хэтом' },
-  { label: 'Добавь бас', prompt: 'Добавь басовую линию к текущему треку' },
-  { label: 'Объясни код', prompt: 'Объясни что делает текущий код' },
-  { label: 'Добавь эффект', prompt: 'Добавь реверберацию и задержку' },
-];
 
 // Fallback models (used if API fetch fails)
 const FALLBACK_MODELS = {
@@ -607,6 +601,10 @@ export function ChatTab({ context, isBottomPanel }) {
   const [showSettings, setShowSettings] = useState(false);
   const lastAutoSentErrorRef = useRef(null);
 
+  // Random suggestions - regenerate when messages are cleared
+  const [suggestionsKey, setSuggestionsKey] = useState(0);
+  const suggestions = useMemo(() => getRandomSuggestions(5), [suggestionsKey]);
+
   // Pending error state for delayed auto-send
   const [pendingError, setPendingError] = useState(null);
   const [errorCountdown, setErrorCountdown] = useState(0);
@@ -725,11 +723,11 @@ export function ChatTab({ context, isBottomPanel }) {
         </div>
       </div>
 
-      {/* Suggestions */}
+      {/* Suggestions - random set, refreshable */}
       <div className="flex flex-wrap gap-1 p-2 border-b border-foreground/20">
-        {SUGGESTIONS.map((s, i) => (
+        {suggestions.map((s, i) => (
           <button
-            key={i}
+            key={`${suggestionsKey}-${i}`}
             onClick={() => chat.sendMessage(s.prompt)}
             disabled={chat.isLoading}
             className="px-2 py-1 text-xs rounded-md bg-background border border-foreground/30 hover:opacity-50 disabled:opacity-30"
@@ -737,6 +735,13 @@ export function ChatTab({ context, isBottomPanel }) {
             {s.label}
           </button>
         ))}
+        <button
+          onClick={() => setSuggestionsKey(k => k + 1)}
+          className="px-2 py-1 text-xs rounded-md bg-background border border-foreground/30 hover:opacity-50 opacity-50"
+          title="Показать другие варианты"
+        >
+          ↻
+        </button>
       </div>
 
       {/* Messages */}

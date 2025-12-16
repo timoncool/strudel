@@ -108,12 +108,17 @@ async function loadG4fProviders() {
 }
 
 /**
- * Fetch list of gpt4free providers
+ * Fetch list of gpt4free providers from SDK
  */
 async function fetchGpt4freeProviders() {
   try {
     const module = await loadG4fProviders();
-    const providers = module.default; // providers object
+    const providers = module.default; // providers object exported by SDK
+
+    if (!providers || typeof providers !== 'object') {
+      console.error('g4f providers not found in module');
+      return [];
+    }
 
     // Convert to array and format
     return Object.keys(providers).map(key => ({
@@ -122,7 +127,7 @@ async function fetchGpt4freeProviders() {
     }));
   } catch (e) {
     console.error('Error fetching gpt4free providers:', e);
-    return [{ value: 'default', label: 'Auto (default)' }];
+    return [];
   }
 }
 
@@ -241,7 +246,9 @@ function SettingsPanel({ onClose, isBottomPanel }) {
       setLoadingProviders(true);
       fetchGpt4freeProviders()
         .then(providers => {
-          setGpt4freeProviders(providers);
+          if (providers.length > 0) {
+            setGpt4freeProviders(providers);
+          }
         })
         .finally(() => setLoadingProviders(false));
     }
@@ -361,37 +368,35 @@ function SettingsPanel({ onClose, isBottomPanel }) {
         </div>
       </div>
 
-      {/* GPT4Free settings - показываем когда выбран gpt4free */}
+      {/* GPT4Free settings */}
       {isGpt4free && (
         <div className="space-y-2">
           <div className="p-2 bg-green-500/10 rounded-md border border-green-500/30">
             <p className="text-xs text-green-400">✓ Бесплатный доступ - API ключ не требуется</p>
           </div>
 
-          {/* Sub-provider selection */}
+          {/* Sub-provider selection - загружается из SDK */}
           <div className="grid gap-1">
             <label className="text-xs flex items-center gap-1">
-              Провайдер g4f
-              {loadingProviders && <span className="opacity-50">загрузка...</span>}
+              Сервер
+              {loadingProviders && <span className="opacity-50">(загрузка...)</span>}
             </label>
             <select
               value={gpt4freeSubProvider}
               onChange={(e) => {
                 setGpt4freeSubProviderLocal(e.target.value);
-                // Models will reload automatically via useEffect
               }}
               className={cx(selectClass, 'text-sm py-1.5')}
-              disabled={loadingProviders}
+              disabled={loadingProviders || gpt4freeProviders.length === 0}
             >
               {gpt4freeProviders.length === 0 ? (
-                <option value="default">Auto (default)</option>
+                <option value="default">Загрузка...</option>
               ) : (
                 gpt4freeProviders.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))
               )}
             </select>
-            <p className="text-xs opacity-50">Модели зависят от выбранного провайдера</p>
           </div>
         </div>
       )}

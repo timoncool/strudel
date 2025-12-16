@@ -7,6 +7,10 @@
  * 2. CHANGELOG.md в формате Keep a Changelog
  *
  * Запуск: node scripts/generate-changelog.js
+ *
+ * ⚠️  ВАЖНО: НИКОГДА не редактируй website/src/data/changelog.json вручную!
+ *     Всегда запускай этот скрипт: pnpm changelog
+ *     Скрипт автоматически читает коммиты из git и генерирует changelog.
  */
 
 import { execSync } from 'child_process';
@@ -237,6 +241,20 @@ function main() {
   // Мерджим с существующим changelog
   const mergedChangelog = mergeChangelogs(existingChangelog, newJsonData);
 
+  // Добавляем предупреждение как первый элемент (для Claude и других AI)
+  const warningEntry = {
+    "_AI_WARNING": "⚠️ НЕ РЕДАКТИРУЙ ЭТОТ ФАЙЛ ВРУЧНУЮ! Запусти: pnpm changelog",
+    "date": "_DO_NOT_EDIT",
+    "dateFormatted": "⚠️ ГЕНЕРИРУЕТСЯ АВТОМАТИЧЕСКИ",
+    "changes": []
+  };
+
+  // Убираем старое предупреждение если есть, добавляем новое в начало
+  const finalChangelog = [
+    warningEntry,
+    ...mergedChangelog.filter(day => day.date !== "_DO_NOT_EDIT")
+  ];
+
   // Сохраняем JSON
   const jsonPath = path.join(ROOT_DIR, 'website/src/data/changelog.json');
   const dataDir = path.dirname(jsonPath);
@@ -244,7 +262,7 @@ function main() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  fs.writeFileSync(jsonPath, JSON.stringify(mergedChangelog, null, 2), 'utf-8');
+  fs.writeFileSync(jsonPath, JSON.stringify(finalChangelog, null, 2), 'utf-8');
   console.log(`✅ JSON: ${jsonPath}`);
 
   console.log(`\n✨ Добавлено ${newCommits.length} новых записей!`);

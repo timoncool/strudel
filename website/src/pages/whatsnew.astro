@@ -3,6 +3,15 @@ import HeadCommon from '../components/HeadCommon.astro';
 import Header from '../components/Header/Header.astro';
 import LeftSidebar from '../components/LeftSidebar/LeftSidebar.astro';
 import PageContent from '../components/PageContent/PageContent.astro';
+/**
+ * ⚠️⚠️⚠️ ВНИМАНИЕ CLAUDE И ДРУГИЕ AI ⚠️⚠️⚠️
+ *
+ * НЕ РЕДАКТИРУЙ ../data/changelog.json ВРУЧНУЮ!
+ *
+ * Этот файл генерируется автоматически из git коммитов.
+ * Чтобы обновить changelog, запусти: pnpm changelog
+ * Скрипт: scripts/generate-changelog.js
+ */
 import changelog from '../data/changelog.json';
 
 const currentPage = Astro.url.pathname;
@@ -64,7 +73,7 @@ function getTypeStyle(type: string) {
 
             <!-- Timeline -->
             <div class="space-y-8">
-              {changelog.map((day: any) => (
+              {changelog.filter((day: any) => day.date !== "_DO_NOT_EDIT").map((day: any) => (
                 <div class="relative">
                   <!-- Дата -->
                   <div class="sticky top-16 z-10 bg-background/95 backdrop-blur py-2 mb-4 border-b border-gray-700">

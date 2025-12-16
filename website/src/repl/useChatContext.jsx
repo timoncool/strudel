@@ -413,7 +413,7 @@ export function useChatContext(replContext) {
       let isThinking = false;
       let actionsExecuted = [];
 
-      // GPT4Free: use client-side handler (no server needed)
+      // GPT4Free: use client-side handler with real-time action parsing
       if (isGpt4free) {
         // Build system prompt with code context
         const codeContext = currentCode
@@ -427,53 +427,52 @@ export function useChatContext(replContext) {
           ...apiMessages,
         ];
 
+        const editor = replContext?.editorRef?.current;
+        let lastCodeBlockEnd = 0; // Track last processed code block
+        let playTriggered = false;
+        let stopTriggered = false;
+
         for await (const message of runGpt4freeClientChat(gpt4freeMessages, aiModel, gpt4freeSubProvider || 'default', setLastAction)) {
           if (message.type === 'text' && message.content) {
             fullContent += message.content;
-            setMessages(prev => {
-              const updated = [...prev];
-              const lastIdx = updated.length - 1;
-              if (updated[lastIdx]?.role === 'assistant') {
-                updated[lastIdx] = { ...updated[lastIdx], content: fullContent };
+
+            // Real-time parsing: check for completed code blocks
+            if (editor) {
+              const codeBlocks = extractCodeBlocks(fullContent);
+              if (codeBlocks.length > lastCodeBlockEnd) {
+                // New code block completed - apply it immediately
+                const code = codeBlocks[codeBlocks.length - 1];
+                editor.setCode(code);
+                lastCodeBlockEnd = codeBlocks.length;
+                if (!actionsExecuted.includes('Код установлен')) {
+                  actionsExecuted.push('Код установлен');
+                }
+                setLastAction('✓ Код применён в редактор');
               }
-              return updated;
-            });
-          } else if (message.type === 'error') {
-            throw new Error(message.error);
-          }
-        }
 
-        // GPT4Free: parse actions and apply code
-        const editor = replContext?.editorRef?.current;
-        if (editor && fullContent) {
-          const { actions, cleanContent } = parseGpt4freeActions(fullContent);
-          const codeBlocks = extractCodeBlocks(fullContent);
+              // Real-time parsing: check for [PLAY] marker
+              if (!playTriggered && /\[PLAY\]/i.test(fullContent)) {
+                playTriggered = true;
+                editor.evaluate();
+                actionsExecuted.push('Воспроизведение запущено');
+                setLastAction('▶ Воспроизведение запущено');
+              }
 
-          // Apply code if found
-          if (codeBlocks.length > 0) {
-            const code = codeBlocks[codeBlocks.length - 1];
-            editor.setCode(code);
-            actionsExecuted.push('Код установлен');
-            setLastAction('✓ Код применён в редактор');
-          }
-
-          // Execute parsed actions
-          for (const action of actions) {
-            if (action.type === 'playMusic') {
-              editor.evaluate();
-              actionsExecuted.push('Воспроизведение запущено');
-              setLastAction('▶ Воспроизведение запущено');
-            } else if (action.type === 'stopMusic') {
-              editor.stop();
-              actionsExecuted.push('Воспроизведение остановлено');
-              setLastAction('⏹ Воспроизведение остановлено');
+              // Real-time parsing: check for [STOP] marker
+              if (!stopTriggered && /\[STOP\]/i.test(fullContent)) {
+                stopTriggered = true;
+                editor.stop();
+                actionsExecuted.push('Воспроизведение остановлено');
+                setLastAction('⏹ Воспроизведение остановлено');
+              }
             }
-          }
 
-          // Update message with action summary
-          if (actionsExecuted.length > 0) {
-            const actionSummary = `\n\n✓ ${actionsExecuted.join(', ')}`;
-            const displayContent = cleanContent + actionSummary;
+            // Update displayed message (clean markers for display)
+            const displayContent = fullContent
+              .replace(/\[PLAY\]/gi, '')
+              .replace(/\[STOP\]/gi, '')
+              .trim();
+
             setMessages(prev => {
               const updated = [...prev];
               const lastIdx = updated.length - 1;
@@ -482,7 +481,26 @@ export function useChatContext(replContext) {
               }
               return updated;
             });
+          } else if (message.type === 'error') {
+            throw new Error(message.error);
           }
+        }
+
+        // Final update with action summary
+        if (actionsExecuted.length > 0) {
+          const cleanContent = fullContent
+            .replace(/\[PLAY\]/gi, '')
+            .replace(/\[STOP\]/gi, '')
+            .trim();
+          const actionSummary = `\n\n✓ ${actionsExecuted.join(', ')}`;
+          setMessages(prev => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (updated[lastIdx]?.role === 'assistant') {
+              updated[lastIdx] = { ...updated[lastIdx], content: cleanContent + actionSummary };
+            }
+            return updated;
+          });
         }
 
         // Done with gpt4free

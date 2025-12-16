@@ -605,96 +605,31 @@ export function ChatTab({ context, isBottomPanel }) {
   const [suggestionsKey, setSuggestionsKey] = useState(0);
   const suggestions = useMemo(() => getRandomSuggestions(5), [suggestionsKey]);
 
-  // Pending error state for delayed auto-send
-  const [pendingError, setPendingError] = useState(null);
-  const [errorCountdown, setErrorCountdown] = useState(0);
-  const errorTimerRef = useRef(null);
-  const countdownIntervalRef = useRef(null);
-
-  // Pending suggestion state for delayed send
-  const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const [suggestionCountdown, setSuggestionCountdown] = useState(0);
-  const suggestionTimerRef = useRef(null);
-  const suggestionCountdownRef = useRef(null);
+  // Unified pending message state (for both errors and suggestions)
+  // type: 'error' | 'suggestion'
+  const [pendingMessage, setPendingMessage] = useState(null);
+  const [countdown, setCountdown] = useState(0);
+  const timerRef = useRef(null);
+  const countdownRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat.messages]);
 
-  // Автоотправка ошибок с таймером 5 сек
-  useEffect(() => {
-    if (context?.error && !chat.isLoading && chat.hasApiKey) {
-      const errorMsg = context.error.message || String(context.error);
-      // Не показываем одну и ту же ошибку повторно
-      if (errorMsg && errorMsg !== lastAutoSentErrorRef.current && !pendingError) {
-        lastAutoSentErrorRef.current = errorMsg;
-        setPendingError(errorMsg);
-        setErrorCountdown(5);
-
-        // Countdown interval
-        countdownIntervalRef.current = setInterval(() => {
-          setErrorCountdown(prev => {
-            if (prev <= 1) {
-              clearInterval(countdownIntervalRef.current);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-
-        // Auto-send timer
-        errorTimerRef.current = setTimeout(() => {
-          chat.sendEditorError(errorMsg);
-          setPendingError(null);
-          setErrorCountdown(0);
-        }, 5000);
-      }
-    }
-  }, [context?.error, chat.isLoading, chat.hasApiKey]);
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
-      if (suggestionCountdownRef.current) clearInterval(suggestionCountdownRef.current);
-    };
-  }, []);
-
-  // Cancel pending error
-  const cancelPendingError = useCallback(() => {
-    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    setPendingError(null);
-    setErrorCountdown(0);
-  }, []);
-
-  // Send pending error immediately
-  const sendPendingErrorNow = useCallback(() => {
-    if (pendingError) {
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      chat.sendEditorError(pendingError);
-      setPendingError(null);
-      setErrorCountdown(0);
-    }
-  }, [pendingError, chat.sendEditorError]);
-
-  // Start pending suggestion with 5 sec timer
-  const startPendingSuggestion = useCallback((suggestion) => {
+  // Start pending message with 5 sec timer
+  const startPendingMessage = useCallback((type, text, onSend) => {
     // Clear any existing timer
-    if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
-    if (suggestionCountdownRef.current) clearInterval(suggestionCountdownRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
 
-    setPendingSuggestion(suggestion);
-    setSuggestionCountdown(5);
+    setPendingMessage({ type, text, onSend });
+    setCountdown(5);
 
     // Countdown interval
-    suggestionCountdownRef.current = setInterval(() => {
-      setSuggestionCountdown(prev => {
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
         if (prev <= 1) {
-          clearInterval(suggestionCountdownRef.current);
+          clearInterval(countdownRef.current);
           return 0;
         }
         return prev - 1;
@@ -702,31 +637,56 @@ export function ChatTab({ context, isBottomPanel }) {
     }, 1000);
 
     // Auto-send timer
-    suggestionTimerRef.current = setTimeout(() => {
-      chat.sendMessage(suggestion.prompt);
-      setPendingSuggestion(null);
-      setSuggestionCountdown(0);
+    timerRef.current = setTimeout(() => {
+      onSend();
+      setPendingMessage(null);
+      setCountdown(0);
     }, 5000);
-  }, [chat.sendMessage]);
-
-  // Cancel pending suggestion
-  const cancelPendingSuggestion = useCallback(() => {
-    if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
-    if (suggestionCountdownRef.current) clearInterval(suggestionCountdownRef.current);
-    setPendingSuggestion(null);
-    setSuggestionCountdown(0);
   }, []);
 
-  // Send pending suggestion immediately
-  const sendPendingSuggestionNow = useCallback(() => {
-    if (pendingSuggestion) {
-      if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
-      if (suggestionCountdownRef.current) clearInterval(suggestionCountdownRef.current);
-      chat.sendMessage(pendingSuggestion.prompt);
-      setPendingSuggestion(null);
-      setSuggestionCountdown(0);
+  // Cancel pending message
+  const cancelPendingMessage = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setPendingMessage(null);
+    setCountdown(0);
+  }, []);
+
+  // Send pending message immediately
+  const sendPendingMessageNow = useCallback(() => {
+    if (pendingMessage) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      pendingMessage.onSend();
+      setPendingMessage(null);
+      setCountdown(0);
     }
-  }, [pendingSuggestion, chat.sendMessage]);
+  }, [pendingMessage]);
+
+  // Автоотправка ошибок с таймером 5 сек
+  useEffect(() => {
+    if (context?.error && !chat.isLoading && chat.hasApiKey && !pendingMessage) {
+      const errorMsg = context.error.message || String(context.error);
+      // Не показываем одну и ту же ошибку повторно
+      if (errorMsg && errorMsg !== lastAutoSentErrorRef.current) {
+        lastAutoSentErrorRef.current = errorMsg;
+        startPendingMessage('error', errorMsg, () => chat.sendEditorError(errorMsg));
+      }
+    }
+  }, [context?.error, chat.isLoading, chat.hasApiKey, pendingMessage, startPendingMessage, chat.sendEditorError]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  // Start pending suggestion
+  const startPendingSuggestion = useCallback((suggestion) => {
+    startPendingMessage('suggestion', suggestion.prompt, () => chat.sendMessage(suggestion.prompt));
+  }, [startPendingMessage, chat.sendMessage]);
 
   // Show settings if no API key
   if (!chat.hasApiKey || showSettings) {
@@ -785,7 +745,7 @@ export function ChatTab({ context, isBottomPanel }) {
           <button
             key={`${suggestionsKey}-${i}`}
             onClick={() => startPendingSuggestion(s)}
-            disabled={chat.isLoading || pendingSuggestion}
+            disabled={chat.isLoading || pendingMessage}
             className="px-2 py-1 text-xs rounded-md bg-background border border-foreground/30 hover:opacity-50 disabled:opacity-30"
           >
             {s.label}
@@ -793,7 +753,7 @@ export function ChatTab({ context, isBottomPanel }) {
         ))}
         <button
           onClick={() => setSuggestionsKey(k => k + 1)}
-          disabled={pendingSuggestion}
+          disabled={pendingMessage}
           className="px-2 py-1 text-xs rounded-md bg-background border border-foreground/30 hover:opacity-50 opacity-50 disabled:opacity-30"
           title="Показать другие варианты"
         >
@@ -801,28 +761,47 @@ export function ChatTab({ context, isBottomPanel }) {
         </button>
       </div>
 
-      {/* Pending Suggestion with countdown timer */}
-      {pendingSuggestion && (
-        <div className="mx-3 mt-2 p-2 text-xs bg-blue-500/10 rounded-md border border-blue-500/30">
+      {/* Pending Message with countdown timer (unified for errors and suggestions) */}
+      {pendingMessage && (
+        <div className={cx(
+          'mx-3 mt-2 p-2 text-xs rounded-md border',
+          pendingMessage.type === 'error'
+            ? 'bg-orange-500/10 border-orange-500/30'
+            : 'bg-blue-500/10 border-blue-500/30'
+        )}>
           <div className="flex flex-col gap-2">
             <div className="flex items-start gap-2">
-              <span className="text-blue-400">💡</span>
-              <span className="flex-1 text-blue-300 break-words">{pendingSuggestion.label}</span>
+              <span className={pendingMessage.type === 'error' ? 'text-orange-400' : 'text-blue-400'}>
+                {pendingMessage.type === 'error' ? '⚠️' : '💡'}
+              </span>
+              <span className={cx('flex-1 break-words', pendingMessage.type === 'error' ? 'text-orange-300' : 'text-blue-300')}>
+                {pendingMessage.text}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-blue-400/70">
-                Отправка через {suggestionCountdown}с...
+              <span className={pendingMessage.type === 'error' ? 'text-orange-400/70' : 'text-blue-400/70'}>
+                Отправка через {countdown}с...
               </span>
               <div className="flex gap-1">
                 <button
-                  onClick={cancelPendingSuggestion}
-                  className="px-2 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 rounded border border-blue-500/50 text-blue-300"
+                  onClick={cancelPendingMessage}
+                  className={cx(
+                    'px-2 py-1 text-xs rounded border',
+                    pendingMessage.type === 'error'
+                      ? 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/50 text-orange-300'
+                      : 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/50 text-blue-300'
+                  )}
                 >
                   ✕ Отмена
                 </button>
                 <button
-                  onClick={sendPendingSuggestionNow}
-                  className="px-2 py-1 text-xs bg-blue-500/30 hover:bg-blue-500/40 rounded border border-blue-500/50 text-blue-200"
+                  onClick={sendPendingMessageNow}
+                  className={cx(
+                    'px-2 py-1 text-xs rounded border',
+                    pendingMessage.type === 'error'
+                      ? 'bg-orange-500/30 hover:bg-orange-500/40 border-orange-500/50 text-orange-200'
+                      : 'bg-blue-500/30 hover:bg-blue-500/40 border-blue-500/50 text-blue-200'
+                  )}
                 >
                   📤 Сейчас
                 </button>
@@ -858,37 +837,6 @@ export function ChatTab({ context, isBottomPanel }) {
           </>
         )}
       </div>
-
-      {/* Pending Error with countdown timer */}
-      {pendingError && (
-        <div className="mx-3 mb-2 p-2 text-xs bg-orange-500/10 rounded-md border border-orange-500/30">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-start gap-2">
-              <span className="text-orange-400">⚠️</span>
-              <span className="flex-1 text-orange-300 break-words">{pendingError.slice(0, 150)}{pendingError.length > 150 ? '...' : ''}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-orange-400/70">
-                Отправка в чат через {errorCountdown}с...
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={cancelPendingError}
-                  className="px-2 py-1 text-xs bg-orange-500/20 hover:bg-orange-500/30 rounded border border-orange-500/50 text-orange-300"
-                >
-                  ✕ Отмена
-                </button>
-                <button
-                  onClick={sendPendingErrorNow}
-                  className="px-2 py-1 text-xs bg-orange-500/30 hover:bg-orange-500/40 rounded border border-orange-500/50 text-orange-200"
-                >
-                  📤 Сейчас
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Error with "Send to Chat" button */}
       {chat.error && (

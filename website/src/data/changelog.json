@@ -13,6 +13,24 @@
         "type": "docs",
         "typeLabel": "Документация",
         "emoji": "📚",
+        "description": "update ai-agent page - dynamic model list, add gpt4free link",
+        "scope": null,
+        "author": "Claude",
+        "hash": "b763275"
+      },
+      {
+        "type": "docs",
+        "typeLabel": "Документация",
+        "emoji": "📚",
+        "description": "clarify gpt4free is a simulation, not real agent",
+        "scope": null,
+        "author": "Claude",
+        "hash": "419ad87"
+      },
+      {
+        "type": "docs",
+        "typeLabel": "Документация",
+        "emoji": "📚",
         "description": "clarify gpt4free is a simulation, not real agent",
         "scope": null,
         "author": "Claude",
